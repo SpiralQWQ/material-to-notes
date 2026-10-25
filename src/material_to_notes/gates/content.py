@@ -176,7 +176,7 @@ def formula_checks(note: str) -> list:
 
 # The in-note TOC is the part's to generate (configs/note_style_spec.yaml: toc),
 # as its own pass after the note is written — which is why _SECTIONS leaves that
-# heading out: a note that has not been through `pipeline toc` yet is still fine.
+# heading out: a note that has not been through `material-to-notes toc` yet is still fine.
 # An *empty* TOC is a different state, not that one: the heading is there and
 # nothing follows it, so nothing is coming to fill it. 2026-10-16 a rebuild
 # dropped all 31 entries of a note while leaving the heading; the gate passed it
@@ -190,7 +190,7 @@ def toc_checks(note: str) -> list:
     head = _TOC_HEADING.search(note)
     if not head:
         return [("note-toc-filled", True,
-                 "没有篇内目录标题（尚未跑 `pipeline toc`，按规范不算错）")]
+                 "没有篇内目录标题（尚未跑 `material-to-notes toc`，按规范不算错）")]
     entries = 0
     for line in note[head.end():].splitlines():
         if not line.strip():
@@ -201,7 +201,7 @@ def toc_checks(note: str) -> list:
         break
     return [("note-toc-filled", entries > 0,
              f"篇内目录有 {entries} 条条目" if entries else
-             "篇内目录只有标题、一条条目都没有——多半是重写完笔记后没跑 `pipeline toc`")]
+             "篇内目录只有标题、一条条目都没有——多半是重写完笔记后没跑 `material-to-notes toc`")]
 
 
 def structure_checks(note: str) -> list:

@@ -52,7 +52,7 @@ def test_snapshots_stay_inside_the_workdir(tmp_path):
 
 
 def test_dispatching_takes_a_snapshot_before_the_agent_overwrites(tmp_path):
-    # `pipeline assign` is the dispatch point: the last moment the old version
+    # `material-to-notes assign` is the dispatch point: the last moment the old version
     # exists. Without this, a revision round cannot be checked by diff at all.
     from material_to_notes.cli import main as CLI
 

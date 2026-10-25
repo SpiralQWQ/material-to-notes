@@ -5,7 +5,7 @@
 ``docs/穷举测试方案.md`` §七 闭包表里此前没有格子的那几行：
 
 * 清洗两档（默认只剥水印 / ``--deep-clean`` 全规则）——以及**保真门禁两档都不豁免**；
-* ``pipeline toc`` 这条命令本身（此前只有 ``refresh_tocs`` 的单元测试）。
+* ``material-to-notes toc`` 这条命令本身（此前只有 ``refresh_tocs`` 的单元测试）。
 
 CLI 的其余格子（init/intake/deliver/gate/assign/run/step/checklist）已在
 ``tests/unit/test_cli.py``、``tests/unit/test_intake.py``、``tests/e2e/`` 里各有点名，

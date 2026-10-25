@@ -1,4 +1,4 @@
-"""Tests for pipeline.autorun — the entry point that `pipeline run` drives."""
+"""Tests for pipeline.autorun — the entry point that `material-to-notes run` drives."""
 
 from pathlib import Path
 

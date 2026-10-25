@@ -53,7 +53,7 @@ def test_a_skipped_step_without_artifacts_stays_plain(tmp_path):
 
 
 def test_the_note_row_can_be_added_to_an_existing_sheet(tmp_path):
-    """笔记由 agent 手写、不走 `pipeline step`，进度单里原本没有它那一行（T58）。"""
+    """笔记由 agent 手写、不走 `material-to-notes step`，进度单里原本没有它那一行（T58）。"""
     sheet = P.build([StepRecord("clean", "done")], tmp_path)
     base = tmp_path / "04_笔记"
     base.mkdir(parents=True)

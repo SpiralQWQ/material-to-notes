@@ -474,7 +474,7 @@ def test_a_note_without_a_toc_is_not_flagged():
 
 def test_the_empty_toc_failure_says_what_to_run():
     detail = dict((n, d) for n, _ok, d in C.toc_checks(_EMPTY_TOC))["note-toc-filled"]
-    assert "pipeline toc" in detail
+    assert "material-to-notes toc" in detail
 
 
 # --- the reconciliation shim (Task-14 / acceptance B-2) ---------------------

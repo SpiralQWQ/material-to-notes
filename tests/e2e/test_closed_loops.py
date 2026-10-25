@@ -144,7 +144,7 @@ def test_run_is_logged(tmp_path):
 
 
 def test_step_mode_sheet_keeps_the_steps_that_already_ran(tmp_path):
-    # `pipeline step` is the main path now (one sub-agent per step). Building
+    # `material-to-notes step` is the main path now (one sub-agent per step). Building
     # the sheet from that run alone would erase the steps before it: the sheet
     # showed one row while two steps were actually done.
     execs = _executors(DOC_SPEC)

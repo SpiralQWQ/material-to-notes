@@ -32,8 +32,8 @@ EXIT_HANDED_OFF = 4
 
 
 def _build_parser() -> argparse.ArgumentParser:
-    parser = argparse.ArgumentParser(prog="pipeline", description="五工具流水线编排层")
-    parser.add_argument("--version", action="version", version=f"pipeline {__version__}")
+    parser = argparse.ArgumentParser(prog="material-to-notes", description="五工具流水线编排层")
+    parser.add_argument("--version", action="version", version=f"material-to-notes {__version__}")
     sub = parser.add_subparsers(dest="cmd")
 
     p_init = sub.add_parser("init", help="初始化一个工作目录")
@@ -191,7 +191,7 @@ def main(argv=None) -> int:
             print(content.raw)
             passed = passed and content.passed
             if passed:
-                # 笔记由 agent 手写、不走 `pipeline step`，所以跑完那条链的进度单
+                # 笔记由 agent 手写、不走 `material-to-notes step`，所以跑完那条链的进度单
                 # 里没有它那一行；门禁通过就是"这一步确实成了"的认证点，补上它，
                 # 免得进度单与磁盘对不上（SOP §六 / T58）。
                 sheet = Path(args.workdir) / _workdir.PROGRESS_FILE

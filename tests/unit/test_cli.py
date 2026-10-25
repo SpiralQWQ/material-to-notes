@@ -109,7 +109,7 @@ def test_gate_rejects_unknown_step(tmp_path, capsys):
 
 
 def test_gate_note_records_the_note_row_in_the_progress_sheet(tmp_path, monkeypatch):
-    """笔记由 agent 手写、不走 `pipeline step`，跑完那条链的进度单里从来没有它那一行。
+    """笔记由 agent 手写、不走 `material-to-notes step`，跑完那条链的进度单里从来没有它那一行。
 
     门禁通过是"这一步确实成了"的认证点，此刻把它补进进度单——否则进度单与磁盘
     对不上（SOP §六 / T58）。

@@ -61,10 +61,10 @@ def inconsistent(records, root) -> tuple:
 def with_note_row(sheet: str, root, step_id: str) -> str:
     """Add (or refresh) the note step's row in an existing progress sheet.
 
-    The note is written by an agent, not by ``pipeline step``, so the sheet built
+    The note is written by an agent, not by ``material-to-notes step``, so the sheet built
     from a run's records never has a row for it — and the sheet then contradicts
     the disk, which SOP §六 forbids. The main conversation certifies the note by
-    running ``pipeline gate <workdir> note``; that is the moment the row goes in.
+    running ``material-to-notes gate <workdir> note``; that is the moment the row goes in.
     """
     found = artifacts(root, step_id)
     row = f"| {step_id} | {LABEL['done']} | " + ("、".join(found) if found else "（无）") + " |"

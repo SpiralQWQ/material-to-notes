@@ -286,20 +286,20 @@ def test_brief_is_rendered_into_the_sheet(tmp_path):
 
 
 def test_the_note_sheet_warns_against_the_overwriting_command(tmp_path):
-    """`pipeline step … note` 会 shell 调 mre **重新生成**笔记，把 agent 手写的产物顶掉。
+    """`material-to-notes step … note` 会 shell 调 mre **重新生成**笔记，把 agent 手写的产物顶掉。
 
     这行命令此前就印在写笔记的任务单上，与同一张单"由你亲自写笔记"的说明自相矛盾，
     照单执行就会误覆盖（T57）。
     """
     sheet = P.assign_sheet(tmp_path, "note")
-    assert "执行：`pipeline step" not in sheet
+    assert "执行：`material-to-notes step" not in sheet
     assert "不要" in sheet and "覆盖" in sheet
 
 
 def test_other_steps_still_print_their_own_command(tmp_path):
     # note 是特例；其余步骤本来就是让 agent 跑那条命令
     sheet = P.assign_sheet(tmp_path, "clean")
-    assert "执行：`pipeline step" in sheet
+    assert "执行：`material-to-notes step" in sheet
 
 
 # --- 交稿前自检三道（2026-10-22，图形学第 1/2 章实战）------------------------

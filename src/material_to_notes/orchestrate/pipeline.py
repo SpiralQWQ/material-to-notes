@@ -265,7 +265,7 @@ def _segment(root, chain, target, executors, gates, review, max_attempts, on_pro
 def _sheet_records(root, records):
     """This run's records, plus every step the state already has, in step order.
 
-    ``pipeline step`` runs one step at a time, so building the sheet from that
+    ``material-to-notes step`` runs one step at a time, so building the sheet from that
     run alone would overwrite the record of the steps that ran before it — the
     sheet would show one row while three steps are actually done.
     """
@@ -513,7 +513,7 @@ def autorun(root, targets, *, kind=None, mode="cloud", glm="no", terms_file="", 
             force=False, album=None) -> dict:
     """Stage the inputs, work out the route, then run the chain end to end.
 
-    This is what ``pipeline run`` drives. Pass ``executors`` to run the chain
+    This is what ``material-to-notes run`` drives. Pass ``executors`` to run the chain
     against something other than the real tools (tests, dry runs).
 
     A folder is scanned before anything is decided, because what it holds changes
@@ -681,7 +681,7 @@ _BRIEF_HEAD = (
     "**由你亲自写笔记**，不是 shell 调 mre 再让它去找模型。",
     "**frontmatter 的 `word_count` 填源文（`03_清洗/<名>.txt`）的字符数（含换行），不是笔记自己写了多少字**："
     "已交付的笔记一律是这个口径，用来记「这份素材有多大」；填成笔记长度会和源文规模对不上。"
-    "**笔记改完之后要重填一次**——每次写盘或跑 `pipeline toc` 都会改动文件，字数跟着变。",
+    "**笔记改完之后要重填一次**——每次写盘或跑 `material-to-notes toc` 都会改动文件，字数跟着变。",
     "**上面列了几份素材，就写几份笔记**，一份一个文件、文件名严格用上面给的名字，"
     "每份笔记只讲它自己那份素材（不要串味、不要合并成一份）。",
 )
@@ -699,8 +699,8 @@ _BRIEF_TAIL = (
     "PowerShell `$env:PYTHONIOENCODING=\"utf-8\"`。"
     "查机械对账 ≥90% / 六件套齐 / 费曼 ≥2 / 膨胀率过线；**禁止加 `--score`**（那是 GLM 评分，"
     "按 SOP 已由独立审核子 agent 取代）。每份笔记都要跑，且 `--src` 必须是它自己那份原文。",
-    "② 产物契约：`pipeline gate <工作目录> note` —— 由主对话跑，会逐份核对。",
-    "语义对账、幻觉、六件套是否名副其实，由**另一个独立审核子 agent** 按 `pipeline checklist note` 判。",
+    "② 产物契约：`material-to-notes gate <工作目录> note` —— 由主对话跑，会逐份核对。",
+    "语义对账、幻觉、六件套是否名副其实，由**另一个独立审核子 agent** 按 `material-to-notes checklist note` 判。",
 )
 
 
@@ -744,12 +744,12 @@ def assign_sheet(root, step_id: str, *, env=None) -> str:
         lines.append(f"- 输入：{base / _workdir.INPUT_DIR}（原始输入）")
         lines.append(f"- 产物必须写到：`{out_dir}`")
     if step.id == NOTE_STEP:
-        # **不要**在这张单子上写 `pipeline step … note`：那条命令会 shell 调 mre
+        # **不要**在这张单子上写 `material-to-notes step … note`：那条命令会 shell 调 mre
         # **重新生成** `04_笔记/<名>.md`，把 agent 手写的产物顶掉（有快照可回溯，
         # 但极易照单执行而误覆盖——T57）。写笔记的人只需要：读单子 → 手写 → 自跑门禁。
-        lines.append("- 执行：**由你亲自写笔记**（见下）。**不要**跑 `pipeline step … note` —— 它会用零件重新生成笔记、覆盖你刚写的产物。")
+        lines.append("- 执行：**由你亲自写笔记**（见下）。**不要**跑 `material-to-notes step … note` —— 它会用零件重新生成笔记、覆盖你刚写的产物。")
     else:
-        lines.append(f"- 执行：`pipeline step {base} {step.id}`")
+        lines.append(f"- 执行：`material-to-notes step {base} {step.id}`")
     lines += [
         "",
         "## 这一步要做的事",
