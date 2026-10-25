@@ -1,5 +1,29 @@
 # material-to-notes
 
+<p align="center">
+  <a href="README.md"><kbd>🇺🇸 English</kbd></a> · <kbd>🇨🇳 中文</kbd>
+</p>
+
+<p align="center">
+  <a href="https://github.com/SpiralQWQ/material-to-notes/releases"><img src="https://img.shields.io/github/v/tag/SpiralQWQ/material-to-notes?label=version" alt="version"></a>
+  <a href="https://www.python.org/downloads/"><img src="https://img.shields.io/badge/python-3.10%2B-3776AB" alt="Python 3.10+"></a>
+  <a href="LICENSE"><img src="https://img.shields.io/badge/license-AGPL%203.0%20%7C%20Commercial-blue" alt="license"></a>
+  <a href="https://github.com/SpiralQWQ/material-to-notes/stargazers"><img src="https://img.shields.io/github/stars/SpiralQWQ/material-to-notes?style=social" alt="stars"></a>
+</p>
+
+## 目录
+
+- [它是半自动的，不是全自动](#它是半自动的不是全自动)
+- [安装](#安装)
+- [跑起来](#跑起来)
+- [文档](#文档)
+- [许可](#许可)
+- [贡献](#贡献)
+- [更新日志](#更新日志)
+- [打赏](#打赏)
+
+---
+
 把五个已开源工具串成一条「素材 → 学习笔记」流水线的**编排层**。
 
 | 零件 | 干什么 |
@@ -18,8 +42,7 @@
 ```bash
 python scripts/setup_parts.py          # 拉到 parts/<零件名>/，锁定 commit
 python scripts/setup_parts.py --check  # 只看缺谁，什么都不拉
-```
-
+```text
 来源、锁定版本与许可见 [`docs/UPSTREAM.md`](docs/UPSTREAM.md)。
 
 ---
@@ -28,7 +51,7 @@ python scripts/setup_parts.py --check  # 只看缺谁，什么都不拉
 
 这点必须先说清，否则装完会发现最后一步停住不动，以为项目是坏的。
 
-```
+```text
 机器干的活（全自动）              人 / AI 干的活（必须有人在场）
 ─────────────────────────       ────────────────────────────
 爬网页                            写笔记
@@ -37,8 +60,7 @@ python scripts/setup_parts.py --check  # 只看缺谁，什么都不拉
 按规范排版                        判断"教没教会人"
 查格式 / 查结构 / 查字数            审核质量
                                   决定返工还是通过
-```
-
+```text
 **写笔记那一步故意不做成自动的。** 格式能查、字数能查、结构能查，但"讲清楚了没有"
 只有脑子能判。所以代码跑到这一步就停手，打印一句「`note` 交给子 agent 写，任务单在 XXX」，
 然后由主对话接手：看任务单 → 派 agent → 收作业 → 审核。
@@ -57,8 +79,7 @@ python scripts/setup_parts.py --check  # 只看缺谁，什么都不拉
 
 ```bash
 python scripts/setup_engines.py --check    # 先看缺什么
-```
-
+```text
 默认只装**主管线环境**（约 0.1 GB，一分钟内）。然后按你要跑的线加：
 
 | 命令 | 加装什么 | 实测体积 |
@@ -89,8 +110,7 @@ crawl4ai 要 playwright，presidio 要 spaCy 加模型。装一起解析出来�
 
 ```bash
 python scripts/setup_parts.py
-```
-
+```text
 国内网络慢就加镜像：`--mirror gh-proxy`（2026-10-25 实测可用；这类站点寿命都不长，
 失效时直接传完整 URL 前缀）。
 
@@ -98,8 +118,7 @@ python scripts/setup_parts.py
 
 ```bash
 python -m pytest -q        # 514 passed
-```
-
+```text
 ---
 
 ## 跑起来
@@ -110,8 +129,7 @@ material-to-notes --version
 
 # 或者不安装，临时把 src 加进路径
 PYTHONPATH=src python -m material_to_notes.cli.main --version
-```
-
+```text
 十一条子命令：
 
 | 命令 | 干什么 |

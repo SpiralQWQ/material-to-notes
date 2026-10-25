@@ -128,8 +128,7 @@ checks for them and exits non-zero when it finds one:
 
 ```bash
 python scripts/privacy_check.py
-```
-
+```text
 It is also wired into CI, so a PR that leaks will fail there. Two things it
 deliberately does *not* scan: `runs/` (your own material) and `temp/` (scratch
 and evidence sheets, which legitimately quote the source repo's path). Anything

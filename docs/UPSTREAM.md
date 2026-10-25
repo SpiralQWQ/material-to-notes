@@ -55,7 +55,8 @@
 改 `scripts/setup_parts.py` 里的 commit 之前，先问自己一遍"我怎么知道换了之后还是对的"。
 顺序是固定的：
 
-1. 在上游仓库看清楚那个 commit 改了什么（尤其有没有动入口文件、目录布局、`configs/note_style_spec.yaml`、`scripts/gate_check.py`）
+1. 在上游仓库看清楚那个 commit 改了什么（尤其有没有动入口文件、目录布局，以及 `md-rewrite-engine` 里的 `note_style_spec.yaml`
+   与 `gate_check.py`——`orchestrate/spec.py` 直接读这两个文件）
 2. 改锁表 → `python scripts/setup_parts.py --update`
 3. 跑全量测试：`python -m pytest -q`（当前基线 **514 passed**）
 4. 用一份真实素材端到端跑一条线，确认产物形状没变
@@ -79,8 +80,7 @@ python scripts/setup_parts.py             # 补齐缺失的
 python scripts/setup_parts.py --update    # 全部重拉并按锁表对位
 python scripts/setup_parts.py --force     # 丢掉现有副本，从头克隆
 python scripts/setup_parts.py --mirror gh-proxy   # 走国内镜像
-```
-
+```text
 `--mirror` 收两种值：preset 名（目前只有 `gh-proxy`，2026-10-25 实测可用），
 或者任意完整 URL 前缀。镜像站寿命都不长，preset 失效时直接传 URL 即可。
 

@@ -1,5 +1,29 @@
 # material-to-notes
 
+<p align="center">
+  <kbd>English</kbd> · <kbd><a href="README_zh.md">简体中文</a></kbd>
+</p>
+
+<p align="center">
+  <a href="https://github.com/SpiralQWQ/material-to-notes/releases"><img src="https://img.shields.io/github/v/tag/SpiralQWQ/material-to-notes?label=version" alt="version"></a>
+  <a href="https://www.python.org/downloads/"><img src="https://img.shields.io/badge/python-3.10%2B-3776AB" alt="Python 3.10+"></a>
+  <a href="LICENSE"><img src="https://img.shields.io/badge/license-AGPL%203.0%20%7C%20Commercial-blue" alt="license"></a>
+  <a href="https://github.com/SpiralQWQ/material-to-notes/stargazers"><img src="https://img.shields.io/github/stars/SpiralQWQ/material-to-notes?style=social" alt="stars"></a>
+</p>
+
+## Table of Contents
+
+- [It is semi-automatic, not automatic](#it-is-semi-automatic-not-automatic)
+- [Installation](#installation)
+- [Running it](#running-it)
+- [Documentation](#documentation)
+- [License](#license)
+- [Contributing](#contributing)
+- [Changelog](#changelog)
+- [Support](#support)
+
+---
+
 An **orchestration layer** that chains five open-source tools into one
 material to study-notes pipeline.
 
@@ -23,8 +47,7 @@ carries a **lock table** instead, and one command fetches them on first use:
 ```bash
 python scripts/setup_parts.py          # into parts/<name>/, pinned to a commit
 python scripts/setup_parts.py --check  # report only, fetch nothing
-```
-
+```text
 Where they come from, which commits are pinned, and under what license:
 [`docs/UPSTREAM.md`](docs/UPSTREAM.md).
 
@@ -35,7 +58,7 @@ Where they come from, which commits are pinned, and under what license:
 Read this before installing, or you will finish setup, watch the last step stop,
 and conclude the project is broken.
 
-```
+```text
 What the machine does (fully automatic)     What a person / AI must do
 ─────────────────────────────────────       ─────────────────────────────
 crawl the web                                write the note
@@ -44,8 +67,7 @@ clean
 format to spec                               judge whether it actually teaches
 check format / structure / word count        review quality
                                              decide rework or pass
-```
-
+```text
 **Writing the note is deliberately not automated.** Format can be checked, word
 count can be checked, structure can be checked — but whether it explains the
 material is a judgement only a mind can make. So the code stops at that step and
@@ -71,8 +93,7 @@ Three steps, in this order.
 
 ```bash
 python scripts/setup_engines.py --check    # see what is missing first
-```
-
+```text
 By default this installs the **pipeline environment only** (~0.1 GB, under a
 minute). Then add what the line you want to run needs:
 
@@ -112,8 +133,7 @@ Zhipu GLM key, optionally DeepSeek / Anthropic. The template is
 
 ```bash
 python scripts/setup_parts.py
-```
-
+```text
 Slow network in China: add `--mirror gh-proxy` (verified working 2026-10-25;
 these mirrors do not last, so pass a full URL prefix once that one has gone).
 
@@ -121,8 +141,7 @@ these mirrors do not last, so pass a full URL prefix once that one has gone).
 
 ```bash
 python -m pytest -q        # 514 passed
-```
-
+```text
 ---
 
 ## Running it
@@ -133,8 +152,7 @@ material-to-notes --version
 
 # or without installing, put src on the path for one command
 PYTHONPATH=src python -m material_to_notes.cli.main --version
-```
-
+```text
 Eleven subcommands:
 
 | Command | What it does |
