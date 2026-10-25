@@ -71,12 +71,11 @@ jobs:
         run: python scripts/setup_parts.py --help
       - name: setup_engines.py --help
         run: python scripts/setup_engines.py --help
-      - name: setup_engines.py --check on an empty checkout
-        # Expect exit 1: nothing is installed yet. Exit 2 would mean the script
-        # itself is broken, which is what this job is guarding against.
-        run: |
-          python scripts/setup_engines.py --check || code=$?
-          if [ "$code" != "0" ] && [ "$code" != "1" ]; then
-            echo "unexpected exit code: $code"; exit 1
-          fi
-        shell: bash
+      - name: setup_engines.py --check reports on an empty checkout
+        # --check is report-only and exits 0 whether or not anything is
+        # installed, so a non-zero exit here means the script itself broke —
+        # which is the only thing this job guards. An earlier version of this
+        # step tried to tolerate both 0 and 1 and instead failed on 0: when the
+        # command succeeds, `|| code=$?` never runs, `code` stays empty, and
+        # [ "" != "0" ] is true. The guard went red on a healthy checkout.
+        run: python scripts/setup_engines.py --check

@@ -97,3 +97,90 @@ def test_every_engine_env_var_is_distinct():
 def test_every_engine_key_is_distinct():
     keys = [e.key for e in S.ENGINES] + [S.FFMPEG.key]
     assert len(keys) == len(set(keys)), f"duplicate keys: {keys}"
+
+
+# --- the pipeline env must land in the interpreter that drives the parts ----
+#
+# The bug this pins: `main` used to be modelled as a venv engine, so the default
+# `setup_engines.py` built `.venvs/main` and installed the pipeline's own
+# dependencies into it — a venv nothing ever uses. The adapters run every part
+# under `sys.executable`, so a separate venv leaves the driving interpreter
+# without `yaml` and the pipeline dies on `import yaml` while the setup script
+# reports success and tells the user to run the tests.
+
+def test_the_pipeline_env_is_not_a_throwaway_venv():
+    assert S.PIPELINE.kind == "interpreter", (
+        "the parts run under sys.executable, so the pipeline's own dependencies "
+        "must be installed into that interpreter — a venv of their own would be "
+        "built and never used"
+    )
+
+
+def test_installing_the_pipeline_env_creates_no_venv(monkeypatch):
+    # Proven empirically: with the old behaviour a bare interpreter ran the
+    # suite into 10 collection errors (`No module named 'yaml'`) and the CLI
+    # could not even print --version, while setup_engines.py reported success
+    # and told the user to run the tests.
+    calls = []
+
+    class FakeRun:
+        returncode = 0
+        stderr = ""
+        stdout = ""
+
+    def fake_run(argv, cwd=None):
+        calls.append(list(argv))
+        return FakeRun()
+
+    monkeypatch.setattr(S, "_run", fake_run)
+
+    ok, detail = S.install(S.PIPELINE)
+    assert ok, detail
+    assert calls, "the interpreter install must actually invoke pip"
+    assert not any("venv" in part for argv in calls for part in argv), (
+        f"the pipeline env must not build a venv, got {calls}"
+    )
+    assert any("install" in argv for argv in calls), (
+        f"the pipeline env must pip-install its packages, got {calls}"
+    )
+
+
+def test_the_pipeline_env_status_probes_the_interpreter(tmp_path, monkeypatch):
+    # engine_status() must not look for `.venvs/main` — that directory does not
+    # exist under the fixed design, so a venv-shaped check would report MISSING
+    # on a perfectly working installation.
+    monkeypatch.setattr(S, "venvs_root", lambda: tmp_path)
+    status = S.engine_status(S.PIPELINE)
+    assert "ok" in status, (
+        f"a working interpreter must read as ok, got {status!r}"
+    )
+
+
+def test_pyproject_declares_what_the_pipeline_env_installs():
+    # The coupling that let this ship: pyproject.toml said `dependencies = []`,
+    # so `pip install -e .` installed nothing the pipeline imports. The two
+    # lists are the same fact and must not drift apart again.
+    import re
+    text = (REPO / "pyproject.toml").read_text(encoding="utf-8")
+    block = re.search(r"^dependencies\s*=\s*\[(.*?)^\]", text, re.S | re.M)
+    assert block, "pyproject.toml must declare a dependencies array"
+    declared = {d.strip().strip('"').lower()
+                for d in block.group(1).split(",") if d.strip()}
+    declared_names = {re.split(r"[><=~\s]", d)[0] for d in declared}
+    names = {re.split(r"[><=~\s]", p.strip().lower())[0]
+             for p in S.PIPELINE.packages}
+    missing = names - declared_names
+    assert not missing, (
+        f"pyproject.toml does not declare {sorted(missing)} — `pip install -e .` "
+        "would leave the pipeline unable to import them"
+    )
+
+
+def test_no_dead_weight_in_the_pipeline_env():
+    # sentencex and jsonschema were installed and imported by nobody. The
+    # rewrite engine even documents a zero-dependency rule that says it does
+    # not use jsonschema, so installing it was pure download cost.
+    names = [p.split(">=")[0].split(">")[0].split("=")[0].split("<")[0].strip().lower()
+             for p in S.PIPELINE.packages]
+    for dead in ("sentencex", "jsonschema"):
+        assert dead not in names, f"{dead} has no importer anywhere in the repo"

@@ -115,6 +115,12 @@ model. One environment resolves to a version set that satisfies nobody. The part
 are built for this — each heavy engine runs through a bridge script whose
 interpreter comes from an environment variable.
 
+The pipeline environment is the exception to the one-venv-per-engine rule: it is
+installed **into the interpreter you run this script with**, because the
+adapters launch every part under that same interpreter. `pip install -e .`
+installs the same set (`pyproject.toml` declares them), so either path leaves you
+able to `import yaml`.
+
 **Local MinerU is not recommended.** The document line is built for the MinerU
 cloud API; the local engine is gigabytes of models doing the same job. If you
 really need `--mode local`: `--line document-local` (~4.6 GB, includes pix2text
@@ -128,6 +134,10 @@ you set `FFMPEG` yourself.
 Keys are yours to provide, in `.env` (gitignored): a MinerU cloud API token, a
 Zhipu GLM key, optionally DeepSeek / Anthropic. The template is
 [`.env.example`](.env.example) and **every value in it is empty**.
+
+`MINERU_API_TOKEN` is the one the default document line cannot run without — the
+free tier at [mineru.net](https://mineru.net/) is enough to try it. The rest are
+optional and only needed for quality scoring and image understanding.
 
 ### Step 2: fetch the parts
 

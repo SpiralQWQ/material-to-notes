@@ -50,26 +50,41 @@ class Engine:
     line: str             # which pipeline line needs it
     note: str = ""
     size_gb: float = 0.0
-    kind: str = "venv"    # "venv" or "binary"
+    kind: str = "venv"    # "venv", "binary", or "interpreter"
     recommended: bool = True
     extra: tuple = ()     # shell commands to run inside the venv afterwards
+    imports: tuple = ()   # modules to probe, for kind == "interpreter"
 
 
 # The pipeline's own environment. All five parts are driven by the interpreter
 # that runs the orchestrator, so their light dependencies live here. The heavy
 # ones deliberately do not: they belong to the engines below.
+# Not a venv. The adapters run every part under ``sys.executable`` — the
+# interpreter driving the orchestrator — so the pipeline's own dependencies have
+# to be installed *there*. Modelling this as a venv built one that nothing ever
+# used: the script reported success, the driving interpreter still had no
+# ``yaml``, and the first ``import yaml`` killed the CLI. Hence kind="interpreter".
+#
+# The package list is the union of what the parts import when they run under
+# that interpreter, cross-checked against each part's own pyproject. sentencex
+# and jsonschema used to be here with no importer anywhere in the repo; the
+# rewrite engine even documents a zero-dependency rule that says it does not use
+# jsonschema, so installing it was pure download cost.
 PIPELINE = Engine(
     key="main",
     env_var="",
     packages=(
-        "PyYAML>=6.0", "requests>=2.31", "python-dotenv>=1.0",
-        "sentencex>=1.0.0", "jsonschema>=4.26.0",
+        "PyYAML>=6.0",          # md-rewrite-engine reads the note style spec
+        "requests>=2.31",       # dtmd cloud upload/poll
+        "python-dotenv>=1.0",   # m2m glm_vision
         # dtmd imports these lazily inside its quality gates and its slicer.
         "pymupdf>=1.24.0", "mistune>=3.0.0", "pikepdf>=10.0.0",
     ),
     line="all",
-    note="主管线环境。五个零件都由驱动编排层的那个解释器运行，所以它们的轻依赖放这里。",
+    note="主管线环境。五个零件都由驱动编排层的那个解释器运行，所以这些包装进那个解释器。",
     size_gb=0.1,
+    kind="interpreter",
+    imports=("yaml", "requests", "dotenv", "fitz", "mistune", "pikepdf"),
 )
 
 ENGINES = (
@@ -195,14 +210,36 @@ def write_env(values: dict, root=None) -> Path:
     return path
 
 
+def _interpreter_status(engine: Engine) -> str:
+    """Whether the driving interpreter can import what the pipeline needs.
+
+    One subprocess importing every module at once: the answer has to be about
+    the interpreter the parts will actually run under, not about a venv that
+    happens to exist somewhere.
+    """
+    if not engine.imports:
+        return "ok"
+    code = "import " + ", ".join(engine.imports)
+    out = _run([_python_exe(), "-c", code])
+    if out.returncode == 0:
+        return "ok"
+    tail = (out.stderr or out.stdout).strip().splitlines()
+    detail = tail[-1] if tail else "import failed"
+    if "No module named" in detail:
+        detail = detail.split("No module named")[-1].strip().strip("'\"")
+    return "missing " + detail[:60]
+
+
 def engine_status(engine: Engine) -> str:
-    """Whether an engine is ready: its venv exists and holds an interpreter."""
+    """Whether an engine is ready."""
     if engine.kind == "binary":
         configured = read_env().get(engine.env_var, "")
         if configured and Path(configured).is_file():
             return "ok"
         found = shutil.which("ffmpeg") or shutil.which("ffmpeg.exe")
         return "ok (on PATH)" if found else "MISSING"
+    if engine.kind == "interpreter":
+        return _interpreter_status(engine)
     venv = venvs_root() / engine.key
     if not venv_python(venv).is_file():
         return "MISSING"
@@ -244,10 +281,33 @@ def _run_extra(engine: Engine, py: Path) -> list:
     return failures
 
 
+def _install_into_interpreter(engine: Engine) -> tuple:
+    """Install into the interpreter driving this script, not a new venv.
+
+    The adapters use ``sys.executable`` for all five parts, so this is the only
+    environment whose contents matter to the pipeline itself. A venv here would
+    be built, populated, and then never read.
+    """
+    if not engine.packages:
+        return True, _python_exe()
+    out = _run([_python_exe(), "-m", "pip", "install", "--quiet", *engine.packages])
+    if out.returncode != 0:
+        tail = (out.stderr or out.stdout).strip().splitlines()
+        reason = tail[-1] if tail else "?"
+        hint = ""
+        if "externally-managed-environment" in (out.stderr or "") + (out.stdout or ""):
+            hint = (" (this interpreter is marked externally managed; use a venv "
+                    "and install the pipeline into it)")
+        return False, "pip install failed: " + reason[:160] + hint
+    return True, _python_exe()
+
+
 def install(engine: Engine, force: bool = False) -> tuple:
     """Install one engine. Returns (ok, message)."""
     if engine.kind == "binary":
         return _install_ffmpeg()
+    if engine.kind == "interpreter":
+        return _install_into_interpreter(engine)
 
     venv = venvs_root() / engine.key
     if force and venv.is_dir():
@@ -366,7 +426,8 @@ def main(argv=None) -> int:
                 continue
             extra = [k for k in members if k != "main"]
             gb = sum(by_key[k].size_gb for k in extra)
-            print(f"  --line {line:<9} + {', '.join(extra):<24} ~{gb:.1f} GB")
+            tail = f"+ {', '.join(extra):<24} ~{gb:.1f} GB" if extra                 else "nothing extra (already installed above)"
+            print(f"  --line {line:<9} {tail}")
         print("  --all                  everything recommended, ~5 GB")
         print("  --line document-local  local MinerU instead of the cloud API")
         print("                          (3 GB of models this project does not")

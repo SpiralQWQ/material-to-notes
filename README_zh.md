@@ -97,6 +97,10 @@ python scripts/setup_engines.py --check    # 先看缺什么
 crawl4ai 要 playwright，presidio 要 spaCy 加模型。装一起解析出来的版本集谁都不满足。
 零件本来就是这么设计的——重依赖各自走桥脚本，解释器由环境变量指定。
 
+主管线环境是「一个引擎一个独立环境」的唯一例外：它装进**你运行这个脚本时用的那个解释器**，
+因为适配器就是用同一个解释器启动所有零件的。`pip install -e .` 装的是同一套
+（`pyproject.toml` 里声明了），两条路走完都能 `import yaml`。
+
 **本地 MinerU 不推荐。** 文档线是照着 MinerU 云 API 设计的，本地引擎是几 GB 模型干同一件事。
 真要 `--mode local`，用它：`--line document-local`（~4.6 GB，含 pix2text 公式 OCR）。
 
@@ -105,6 +109,9 @@ crawl4ai 要 playwright，presidio 要 spaCy 加模型。装一起解析出来�
 
 密钥按需自备，写进 `.env`（该文件不入库）：MinerU 云 API token、智谱 GLM key，
 可选 DeepSeek / Anthropic。模板见 [`.env.example`](.env.example)，**里面全是空值**。
+
+`MINERU_API_TOKEN` 是默认文档线**缺了就跑不动**的那一个——[mineru.net](https://mineru.net/)
+注册送的免费额度够试手。其余都是可选项，只在质检评分和画面理解时才用得上。
 
 ### 第 2 步：拉零件
 

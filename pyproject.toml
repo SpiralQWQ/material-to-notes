@@ -7,7 +7,18 @@ name = "material-to-notes"
 version = "1.0.0"
 description = "Orchestration layer that chains five open-source tools into a material-to-notes pipeline"
 requires-python = ">=3.10"
-dependencies = []
+# The adapters run every part under this interpreter (sys.executable), so the
+# parts' light dependencies belong here. This list is the same fact as
+# PIPELINE.packages in scripts/setup_engines.py — tests/unit/test_setup_engines.py
+# asserts the two do not drift apart.
+dependencies = [
+    "PyYAML>=6.0",
+    "requests>=2.31",
+    "python-dotenv>=1.0",
+    "pymupdf>=1.24.0",
+    "mistune>=3.0.0",
+    "pikepdf>=10.0.0",
+]
 
 [project.scripts]
 material-to-notes = "material_to_notes.cli.main:main"
