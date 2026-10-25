@@ -45,7 +45,23 @@ First public release, dual-licensed under AGPL-3.0 plus a commercial license.
   included. It used to omit the one token the default document line cannot run
   without, so a user following the README hit "MINERU_API_TOKEN is not set" with
   nothing in the template to copy.
-- **526 tests** (unit + e2e + exhaustive). They need only `pytest` and `pyyaml`:
+- **`pyproject.toml` carries the metadata the open-source gate names** — license,
+  author, readme, keywords, classifiers, and project URLs. No author email on
+  purpose: an address in a published file is a spam magnet.
+- **README sections the gate names** — Features, FAQ, and Roadmap, in both
+  languages. The FAQ leads with "the pipeline stopped at the note step", because
+  this project is semi-automatic on purpose and a reader who does not know that
+  will assume it is broken.
+- **A lint job in CI** (ruff). The rule set is pinned in `pyproject.toml` rather
+  than taken from ruff's defaults, which moved between versions and would turn
+  CI red on upgrade for reasons unrelated to any commit.
+- **`tests/unit/test_open_source_gate.py`** — 45 tests that assert the gate
+  itself: both READMEs carry every required section, the table of contents
+  matches the headings, the changelog has an Unreleased slot, the license carries
+  the standard AGPL markers, CI runs pytest *and* a linter, and no script is
+  stranded in the repository root. Every one of those was true on the day it was
+  written and is lost to a later edit otherwise.
+- **575 tests** (unit + e2e + exhaustive). They need only `pytest` and `pyyaml`:
   the suite reads the parts' files, it does not import them, so no engine has to
   be installed to run it.
 
@@ -65,7 +81,7 @@ First public release, dual-licensed under AGPL-3.0 plus a commercial license.
   belong to their own changelogs; this repository consumes them through pinned
   commits. The internal development log is not published here.
 - **A fresh clone was verified end to end** before this release: clone,
-  `setup_parts.py`, `pytest -q` → 526 passed, exit 0. Four things that made the
+  `setup_parts.py`, `pytest -q` → 575 passed, exit 0, and `ruff check` clean. Four things that made the
   README's three steps fail on a clean machine were found and fixed that way, not
   by reading the code: the pipeline environment installing into a venv nothing
   reads, the empty dependency list above, the missing `.env` key, and a CI step
