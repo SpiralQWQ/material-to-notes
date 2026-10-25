@@ -31,8 +31,7 @@
 | 包 | 许可 | 用途 |
 |---|---|---|
 | `mineru` | **`LicenseRef-MinerU-Open-Source-License`**（自定义，非 OSI 标准） | 文档解析引擎。⚠️ 见下方「需要特别注意的三件事」 |
-| `pymupdf` | **AGPL-3.0 或 Artifex 商业许可（双轨）** | PDF 切片/渲染。⚠️ 同上 |
-| `mistune` | BSD-3-Clause | Markdown 语法门禁 |
+| `pymupdf` | **AGPL-3.0 或 Artifex 商业许可（双轨）** | PDF 切片/渲染。⚠️ 见下方「需要特别注意的三件事」 || `mistune` | BSD-3-Clause | Markdown 语法门禁 |
 | `camelot-py` | MIT | 表格复核 |
 | `pikepdf` | MPL-2.0 | 坏 PDF 急救 |
 | `requests` | Apache-2.0 | 云端 API 上传/轮询 |
@@ -100,6 +99,13 @@ PyPI 上它的许可表达式是 `LicenseRef-MinerU-Open-Source-License`，**不
 或者向 Artifex 买商业许可。本仓库整体是 AGPL-3.0，走第一条路是自洽的；
 但**如果你买了 `material-to-notes` 的商业授权，PyMuPDF 这一层仍要单独处理**——
 买我们的授权不附带 Artifex 的授权。
+
+**它不能像本地 MinerU 那样跳过。** 常见误会是把 pymupdf 当成"本地模型"，
+其实它是一个 PDF 工具箱（MuPDF 这个 C 库的 Python 绑定）——不下载模型、不跑推理、
+纯 CPU。云端路径照样需要它：MinerU 云 API 单个文件有 200 页上限，
+上传前必须把大 PDF 物理切成小文件，这个切割就是 pymupdf 干的
+（`dtmd/convert/base.py::make_slice`，`cloud.py` 每个块都会调）。
+装出来约 54 MB，和 mineru 那种 GB 级不是一回事。
 
 ### ③ `torch` 的许可是混合的
 

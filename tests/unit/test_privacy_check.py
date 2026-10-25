@@ -1,10 +1,17 @@
-"""Tests for scripts/privacy_check.py — the vendored-file blind spot.
+"""Tests for scripts/privacy_check.py — its two file-source blind spots.
 
-The bug these lock down: the script used to build its file list from
-``git ls-files`` alone. ``parts/`` is vendored but never committed, so that list
-came back empty for it and the script printed ``clean`` while every part file
-went unscanned. A guard that reports success without looking is worse than no
-guard, so the file source is asserted here rather than trusted.
+The bugs these lock down, both of which made the script report ``clean`` while
+real leaks went unscanned:
+
+1. the file list came from ``git ls-files`` alone, and ``parts/`` is fetched
+   rather than committed, so git returned nothing for it;
+2. ``git ls-files`` cannot see a file nobody has added yet — which is exactly
+   where a leak written before anyone ran this script lives.
+
+A guard that reports success without looking is worse than no guard, so both
+file sources are asserted here rather than trusted. Two further regressions are
+pinned below: an escaped ``\\n`` matching the absolute-path rule, and the same
+file being reported twice because git and ``os.walk`` spell paths differently.
 """
 
 import pathlib
@@ -107,3 +114,103 @@ def test_main_reports_a_hit_that_git_cannot_see(tmp_path, monkeypatch, capsys):
         "a hit inside parts/ must reach the report even though git does not "
         "track it — the vendored list has probably gone back to git ls-files"
     )
+
+
+# --- blind spot #2: a file git has never seen -------------------------------
+
+def test_own_files_sees_what_git_cannot(tmp_path, monkeypatch):
+    # git ls-files is empty for a file nobody has added, and that is precisely
+    # where the unnoticed leaks live. The disk walk must still see it — while
+    # runs/ (user material) stays out.
+    monkeypatch.setattr(P, "tracked_files", lambda: [])
+    (tmp_path / "leak.md").write_text("# doc\n", encoding="utf-8")
+    (tmp_path / "runs").mkdir()
+    (tmp_path / "runs" / "user.pdf").write_text("x\n", encoding="utf-8")
+
+    names = [pathlib.Path(f).name for f in P.own_files(tmp_path)]
+    assert "leak.md" in names, "an untracked file must still be scanned"
+    assert "user.pdf" not in names, "runs/ holds user material and must stay out"
+
+
+def test_own_files_prunes_caches_and_pycache(tmp_path, monkeypatch):
+    monkeypatch.setattr(P, "tracked_files", lambda: [])
+    for junk in ("__pycache__", ".pytest_cache", ".venvs"):
+        d = tmp_path / junk
+        d.mkdir()
+        (d / "junk.py").write_text("x\n", encoding="utf-8")
+    (tmp_path / "real.py").write_text("y = 1\n", encoding="utf-8")
+
+    names = [pathlib.Path(f).name for f in P.own_files(tmp_path)]
+    assert names == ["real.py"], f"caches must be pruned, got {names}"
+
+
+def test_main_reports_a_hit_in_an_untracked_own_file(tmp_path, monkeypatch, capsys):
+    # The second real regression, tested at main() rather than at the helper.
+    # If main() ever builds its own list from git alone again, a file nobody
+    # has added goes unscanned while the script still exits 0 — the same fake
+    # green as the parts/ bug, one layer out.
+    leak = tmp_path / "untracked.md"
+    bs = chr(92)
+    leak.write_text("see C:" + bs + "Users" + bs + "someone" + bs + "x" + bs + "y\n",
+                    encoding="utf-8")
+
+    monkeypatch.setattr(P, "own_files", lambda *a, **k: [str(leak)])
+    monkeypatch.setattr(P, "vendored_files", lambda *a, **k: [])
+
+    rc = P.main()
+    out = capsys.readouterr().out
+    assert "untracked.md" in out, (
+        "a leak in an untracked own file must reach the report — the own list "
+        "has probably gone back to git ls-files"
+    )
+    assert rc == 1, "a real leak must make the script exit non-zero"
+
+
+# --- the false positive that turned a clean checkout red --------------------
+
+def test_an_escaped_newline_is_not_an_absolute_path():
+    # abs-path used to be [A-Za-z]:\ which matched the "t:\n" inside a Python
+    # string literal. Those files are tracked here, so a clean checkout
+    # reported hits and exited 1. A scanner that cries wolf gets ignored, and
+    # that is how the real leaks survive.
+    bs = chr(92)
+    rx = P.PATTERNS["abs-path"]
+    assert not rx.search("if x not in t:" + bs + "n")
+    assert not rx.search("frontmatter:" + bs + "n  - title")
+    assert not rx.search("see C:" + bs + "download"), "a doc example is not a path"
+    assert rx.search("C:" + bs + "Users" + bs + "lenovo" + bs + "x")
+    assert rx.search("E:" + bs + "AAA" + bs + "Program" + bs + "CC")
+
+
+def test_the_same_file_is_not_reported_twice(tmp_path, monkeypatch):
+    # git spells paths with / and os.walk with \ on Windows. As a plain set of
+    # strings the same file was scanned, and reported, twice.
+    monkeypatch.setattr(P, "tracked_files", lambda: ["a/b.py"])
+    (tmp_path / "a").mkdir()
+    (tmp_path / "a" / "b.py").write_text("x = 1\n", encoding="utf-8")
+
+    names = [pathlib.Path(f).name for f in P.own_files(tmp_path)]
+    assert names.count("b.py") == 1, f"one file must be scanned once, got {names}"
+
+
+def test_display_strips_the_repo_root():
+    # The report used to quote absolute paths — noisy to read, and the report
+    # itself then contained the very thing the scan looks for.
+    root = P._slash(str(P.repo_root()))
+    shown = P._display(root + "/docs/x.md")
+    assert shown == "docs/x.md", f"report paths must be repo-relative, got {shown}"
+    assert P._display("/somewhere/else/x.md") == "/somewhere/else/x.md"
+
+
+def test_utf8_stdout_never_raises_on_a_bare_stream(monkeypatch):
+    # The GBK crash: the report quotes file contents verbatim, and on a GBK
+    # console the print itself raised UnicodeEncodeError — the script died
+    # mid-report and exited non-zero for a reason unrelated to privacy.
+    class Bare:
+        encoding = "gbk"
+
+        def write(self, _s):  # pragma: no cover - must never be reached
+            raise AssertionError("should not write anything")
+
+    monkeypatch.setattr(P.sys, "stdout", Bare())
+    P._utf8_stdout()  # must swallow the missing reconfigure, not raise
