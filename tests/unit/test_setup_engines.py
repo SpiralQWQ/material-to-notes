@@ -137,23 +137,88 @@ def test_installing_the_pipeline_env_creates_no_venv(monkeypatch):
     ok, detail = S.install(S.PIPELINE)
     assert ok, detail
     assert calls, "the interpreter install must actually invoke pip"
-    assert not any("venv" in part for argv in calls for part in argv), (
-        f"the pipeline env must not build a venv, got {calls}"
-    )
     assert any("install" in argv for argv in calls), (
         f"the pipeline env must pip-install its packages, got {calls}"
     )
 
+    # Not "no argv contains the substring venv". The first version of this
+    # assertion said exactly that and failed on a checkout whose interpreter
+    # lived at .../ciprobe/venv/Scripts/python.exe — which is where anyone who
+    # follows the instructions puts one. What must not happen is *creating* a
+    # venv, so check the invocation, not the path spelling.
+    for argv in calls:
+        assert argv[1:3] != ["-m", "venv"], f"must not create a venv: {argv}"
+        assert "venv" not in argv[1:], f"no bare 'venv' argument: {argv}"
 
-def test_the_pipeline_env_status_probes_the_interpreter(tmp_path, monkeypatch):
-    # engine_status() must not look for `.venvs/main` — that directory does not
+
+def test_the_pipeline_env_status_probes_the_interpreter(monkeypatch):
+    # engine_status() must not consult `.venvs/main` — that directory does not
     # exist under the fixed design, so a venv-shaped check would report MISSING
-    # on a perfectly working installation.
-    monkeypatch.setattr(S, "venvs_root", lambda: tmp_path)
-    status = S.engine_status(S.PIPELINE)
-    assert "ok" in status, (
-        f"a working interpreter must read as ok, got {status!r}"
+    # on a working installation.
+    #
+    # Asserted at the mechanism level, deliberately. The first version asserted
+    # that the ambient interpreter reads "ok", which is true on a developer
+    # machine and false in CI, where only pytest and pyyaml are installed on
+    # purpose. A test whose result depends on what happens to be pip-installed
+    # is a test that goes red somewhere you are not looking.
+    calls = []
+
+    class Ok:
+        returncode = 0
+        stderr = ""
+        stdout = ""
+
+    class Fail:
+        returncode = 1
+        stderr = "ModuleNotFoundError: No module named 'requests'"
+        stdout = ""
+
+    def consult_venv(*a, **k):
+        raise AssertionError("the interpreter probe must not consult the venv dir")
+
+    monkeypatch.setattr(S, "venvs_root", consult_venv)
+    monkeypatch.setattr(S, "_run",
+                        lambda argv, cwd=None: (calls.append(list(argv)), Ok())[1])
+    assert S.engine_status(S.PIPELINE) == "ok"
+
+    monkeypatch.setattr(S, "_run",
+                        lambda argv, cwd=None: (calls.append(list(argv)), Fail())[1])
+    assert "missing" in S.engine_status(S.PIPELINE)
+
+    assert calls, "the probe must actually run something"
+    for argv in calls:
+        assert argv[1] == "-c", f"the probe must import in a subprocess: {argv}"
+        assert any(a.startswith("import ") for a in argv), f"probe must import: {argv}"
+
+
+def test_no_test_needs_a_pipeline_dependency_at_import_time():
+    # CI installs pytest and pyyaml and nothing else, because the suite reads
+    # the parts' files rather than importing them. A test that imports one of
+    # pyproject's six dependencies at module level passes on a developer
+    # machine and fails in CI — found the hard way when two of these tests
+    # went red in exactly that environment.
+    import re
+    heavy = {p.split(">=")[0].split(">")[0].split("=")[0].split("<")[0].strip().lower()
+             for p in S.PIPELINE.packages}
+    # yaml is the one CI installs, so it is not in this set.
+    heavy.discard("pyyaml")
+    offenders = []
+    for path in sorted((REPO / "tests").rglob("*.py")):
+        if "__pycache__" in path.parts:
+            continue
+        text = path.read_text(encoding="utf-8", errors="ignore")
+        for i, line in enumerate(text.split(chr(10)), 1):
+            m = re.match(r"^\s*(?:import|from)\s+([a-zA-Z_][\w.]*)", line)
+            if not m:
+                continue
+            top = m.group(1).split(".")[0].lower()
+            if top in heavy:
+                offenders.append(f"{path.relative_to(REPO)}:{i} imports {top}")
+    assert not offenders, (
+        "these tests import a pipeline dependency that CI does not install:"
+        + chr(10).join(offenders)
     )
+
 
 
 def _pyproject():
@@ -161,7 +226,7 @@ def _pyproject():
 
     The regex version of this test could not tell the difference between
     ``dependencies`` living under ``[project]`` and the same array sitting under
-    ``[project.urls]`` — a TOML table swallows every key beneath it until the
+    ``[project.urls]`` -- a TOML table swallows every key beneath it until the
     next header. That mistake parses cleanly, breaks packaging, and leaves the
     test green. Reading it as TOML is the only way to assert the structure.
     """
