@@ -1,100 +1,123 @@
 # material-to-notes
 
-把五个已开源工具串成一条「素材 → 学习笔记」流水线的**编排层**。
+An **orchestration layer** that chains five open-source tools into one
+material to study-notes pipeline.
 
-| 零件 | 干什么 |
+| Part | What it does |
 |---|---|
-| [web-knowledge-crawler](https://github.com/SpiralQWQ/web-knowledge-crawler) | 取材（按词汇 + 站点爬网页） |
-| [document-to-markdown](https://github.com/SpiralQWQ/document-to-markdown) | 文档转 md（PDF/Word/PPT） |
-| [media-to-markdown](https://github.com/SpiralQWQ/media-to-markdown) | 媒体转 md（视频/音频/图集） |
-| [text-cleaning-engine](https://github.com/SpiralQWQ/text-cleaning-engine) | 清洗（剥水印、去噪） |
-| [md-rewrite-engine](https://github.com/SpiralQWQ/md-rewrite-engine) | 重写成教学笔记 |
+| [web-knowledge-crawler](https://github.com/SpiralQWQ/web-knowledge-crawler) | fetch material (crawl by terms + sites) |
+| [document-to-markdown](https://github.com/SpiralQWQ/document-to-markdown) | documents to Markdown (PDF/Word/PPT) |
+| [media-to-markdown](https://github.com/SpiralQWQ/media-to-markdown) | media to Markdown (video/audio/albums) |
+| [text-cleaning-engine](https://github.com/SpiralQWQ/text-cleaning-engine) | clean (strip watermarks, denoise) |
+| [md-rewrite-engine](https://github.com/SpiralQWQ/md-rewrite-engine) | rewrite into teaching notes |
 
-本仓**只做编排**，不含任何解析 / 转写 / 清洗 / 重写能力——那些都在五个零件里。
+This repository does the **orchestration only**. It contains no parsing,
+transcription, cleaning, or rewriting capability of its own — all of that lives
+in the parts.
 
-**五个零件的代码不随本仓库发布。** 它们各有版本节奏、CHANGELOG 和许可，
-复制进来会造成两份权威副本悄悄分叉。所以这里只存一份**锁表**，首次使用时一条命令把它们取回来：
+**The code of the parts is not published with this repository.** They each have
+their own release cadence, changelog, and license, and copying them in would
+create two authoritative copies that drift apart silently. So this repository
+carries a **lock table** instead, and one command fetches them on first use:
 
 ```bash
-python scripts/setup_parts.py          # 拉到 parts/<零件名>/，锁定 commit
-python scripts/setup_parts.py --check  # 只看缺谁，什么都不拉
+python scripts/setup_parts.py          # into parts/<name>/, pinned to a commit
+python scripts/setup_parts.py --check  # report only, fetch nothing
 ```
 
-来源、锁定版本与许可见 [`docs/UPSTREAM.md`](docs/UPSTREAM.md)。
+Where they come from, which commits are pinned, and under what license:
+[`docs/UPSTREAM.md`](docs/UPSTREAM.md).
 
 ---
 
-## 它是半自动的，不是全自动
+## It is semi-automatic, not automatic
 
-这点必须先说清，否则装完会发现最后一步停住不动，以为项目是坏的。
+Read this before installing, or you will finish setup, watch the last step stop,
+and conclude the project is broken.
 
 ```
-机器干的活（全自动）              人 / AI 干的活（必须有人在场）
-─────────────────────────       ────────────────────────────
-爬网页                            写笔记
-转 md
-清洗
-按规范排版                        判断"教没教会人"
-查格式 / 查结构 / 查字数            审核质量
-                                  决定返工还是通过
+What the machine does (fully automatic)     What a person / AI must do
+─────────────────────────────────────       ─────────────────────────────
+crawl the web                                write the note
+convert to Markdown
+clean
+format to spec                               judge whether it actually teaches
+check format / structure / word count        review quality
+                                             decide rework or pass
 ```
 
-**写笔记那一步故意不做成自动的。** 格式能查、字数能查、结构能查，但"讲清楚了没有"
-只有脑子能判。所以代码跑到这一步就停手，打印一句「`note` 交给子 agent 写，任务单在 XXX」，
-然后由主对话接手：看任务单 → 派 agent → 收作业 → 审核。
+**Writing the note is deliberately not automated.** Format can be checked, word
+count can be checked, structure can be checked — but whether it explains the
+material is a judgement only a mind can make. So the code stops at that step and
+prints a line saying the `note` step goes to a sub-agent and where the task sheet
+is, and then the main conversation takes over: read the sheet, dispatch an agent,
+collect the work, review.
 
-规矩全在 [`docs/SOP.md`](docs/SOP.md)：主对话只做派发、交接、盯预警、定去留；
-每一步一个执行子 agent、一个**独立**审核子 agent（不共享执行者上下文）；
-每个 Task 走 4 轮审核 + 一张四要素证据单；3 次不过就停，交给人，代码不自己绕过去。
+The working agreement lives in [`docs/SOP.md`](docs/SOP.md) (in Chinese): the
+main conversation only dispatches, hands off between steps, watches for errors,
+and decides retry-or-stop; each step gets one executing sub-agent and one
+**independent** reviewing sub-agent that does not share the context of the
+executor; every task goes through 4 rounds of review plus a four-part evidence
+sheet; three failures and it stops and hands back to a human — the code never
+routes around its own failure.
 
 ---
 
-## 安装
+## Installation
 
-三步，顺序不能换。
+Three steps, in this order.
 
-### 第 1 步：装引擎
+### Step 1: install the engines
 
 ```bash
-python scripts/setup_engines.py --check    # 先看缺什么
+python scripts/setup_engines.py --check    # see what is missing first
 ```
 
-默认只装**主管线环境**（约 0.1 GB，一分钟内）。然后按你要跑的线加：
+By default this installs the **pipeline environment only** (~0.1 GB, under a
+minute). Then add what the line you want to run needs:
 
-| 命令 | 加装什么 | 实测体积 |
+| Command | Adds | Measured size |
 |---|---|---|
-| `--line document` | 只要主管线（文档解析走 MinerU **云 API**） | ~0.1 GB |
+| `--line document` | pipeline env only (parsing goes to the MinerU cloud API) | ~0.1 GB |
 | `--line fetch` | crawl4ai + yt-dlp | ~0.7 GB |
 | `--line clean` | trafilatura + presidio | ~1.4 GB |
 | `--line media` | funasr + torch + rapidocr | ~3.7 GB |
-| `--all` | 除本地 MinerU 外全部 | ~7.0 GB |
+| `--all` | everything except local MinerU | ~7.0 GB |
 
-**丑话说前面**：全装完要下 **5–8 GB**，耗时 **20–40 分钟**，torch 是大头。
-按线装能省掉绝大部分——只跑文档线的话 0.1 GB 就够。
+**The honest number**: installing everything downloads **5–8 GB** and takes
+**20–40 minutes**, most of it torch. Installing per line skips nearly all of
+that — the document line alone is 0.1 GB.
 
-为什么一个引擎一个独立环境，不装一起：torch/funasr 与 opencv 的 numpy 互相打架，
-crawl4ai 要 playwright，presidio 要 spaCy 加模型。装一起解析出来的版本集谁都不满足。
-零件本来就是这么设计的——重依赖各自走桥脚本，解释器由环境变量指定。
+Why one environment per engine instead of one big one: torch/funasr and opencv
+disagree about numpy, crawl4ai wants playwright, presidio wants spaCy plus a
+model. One environment resolves to a version set that satisfies nobody. The parts
+are built for this — each heavy engine runs through a bridge script whose
+interpreter comes from an environment variable.
 
-**本地 MinerU 不推荐。** 文档线是照着 MinerU 云 API 设计的，本地引擎是几 GB 模型干同一件事。
-真要 `--mode local`，用它：`--line document-local`（~4.6 GB，含 pix2text 公式 OCR）。
+**Local MinerU is not recommended.** The document line is built for the MinerU
+cloud API; the local engine is gigabytes of models doing the same job. If you
+really need `--mode local`: `--line document-local` (~4.6 GB, includes pix2text
+for formula OCR).
 
-**ffmpeg 不自动下载。** 在安装脚本里从互联网抓可执行文件是供应链风险，所以只检测 PATH，
-找不到就告诉你装（Windows：`winget install Gyan.FFmpeg`），装完自己设 `FFMPEG`。
+**ffmpeg is not downloaded automatically.** Fetching an executable from the
+internet inside a setup script is a supply-chain risk, so it only checks PATH and
+tells you how to install it (Windows: `winget install Gyan.FFmpeg`), after which
+you set `FFMPEG` yourself.
 
-密钥按需自备，写进 `.env`（该文件不入库）：MinerU 云 API token、智谱 GLM key，
-可选 DeepSeek / Anthropic。模板见 [`.env.example`](.env.example)，**里面全是空值**。
+Keys are yours to provide, in `.env` (gitignored): a MinerU cloud API token, a
+Zhipu GLM key, optionally DeepSeek / Anthropic. The template is
+[`.env.example`](.env.example) and **every value in it is empty**.
 
-### 第 2 步：拉零件
+### Step 2: fetch the parts
 
 ```bash
 python scripts/setup_parts.py
 ```
 
-国内网络慢就加镜像：`--mirror gh-proxy`（2026-10-25 实测可用；这类站点寿命都不长，
-失效时直接传完整 URL 前缀）。
+Slow network in China: add `--mirror gh-proxy` (verified working 2026-10-25;
+these mirrors do not last, so pass a full URL prefix once that one has gone).
 
-### 第 3 步：验证
+### Step 3: verify
 
 ```bash
 python -m pytest -q        # 514 passed
@@ -102,54 +125,86 @@ python -m pytest -q        # 514 passed
 
 ---
 
-## 跑起来
+## Running it
 
 ```bash
-pip install -e .                                   # 装完就有 material-to-notes 命令
+pip install -e .                                   # gives you the material-to-notes command
 material-to-notes --version
 
-# 或者不安装，临时把 src 加进路径
+# or without installing, put src on the path for one command
 PYTHONPATH=src python -m material_to_notes.cli.main --version
 ```
 
-十一条子命令：
+Eleven subcommands:
 
-| 命令 | 干什么 |
+| Command | What it does |
 |---|---|
-| `init` | 初始化一个工作目录 |
-| `route` | 看一个输入会走哪条线 |
-| `run` | 把一条线端到端跑起来（`note` 步交子 agent） |
-| `step` | 只跑一步（供主对话派给子 agent） |
-| `intake` | 看/写投料单 |
-| `deliver` | 把笔记拷到投料单指定的交付目录 |
-| `assign` | 打印某步的任务单（派发用，会先给上一版产物留底） |
-| `snapshots` | 列出某步留底过的产物版本 |
-| `gate` | 跑某步的机器门禁 |
-| `toc` | 用零件给笔记补/刷新篇内目录 |
-| `checklist` | 打印某步的审核检查单 |
+| `init` | initialise a work directory |
+| `route` | see which line an input takes |
+| `run` | run one line end to end (the `note` step goes to a sub-agent) |
+| `step` | run a single step (for the main conversation to dispatch) |
+| `intake` | read/write the intake sheet |
+| `deliver` | copy notes to the delivery directory named in the intake sheet |
+| `assign` | print the task sheet for a step (dispatches; snapshots the previous output first) |
+| `snapshots` | list the versions a step has snapshotted |
+| `gate` | run the machine gates for a step |
+| `toc` | add/refresh the in-document table of contents of a note |
+| `checklist` | print the review checklist for a step |
 
 ---
 
-## 文档
+## Documentation
 
-| 文件 | 看什么 |
+| File | For |
 |---|---|
-| [`docs/SOP.md`](docs/SOP.md) | 给 AI 的强制流程：派活 / 门禁 / 4 轮审核 / 证据单 / 组长验收五步 |
-| [`docs/架构与目录契约.md`](docs/架构与目录契约.md) | 架构与目录布局；**现状以第十节「状态与变更记录」为准** |
-| [`docs/contracts/接口契约.md`](docs/contracts/接口契约.md) | 每一步真正跑出去的命令与产物落点 |
-| [`docs/穷举测试方案.md`](docs/穷举测试方案.md) | 路径穷举 / 边界严格 / 终点一致性 |
-| [`docs/acceptance/每步验收标准.md`](docs/acceptance/每步验收标准.md) | 每一步的实测命令、硬卡与软卡 |
-| [`docs/UPSTREAM.md`](docs/UPSTREAM.md) | 五个零件的来源、锁定版本、许可、两条硬规矩 |
-| [`THIRD_PARTY.md`](THIRD_PARTY.md) | 第三方组件与许可索引；三件需特别注意的事 |
+| [`docs/SOP.md`](docs/SOP.md) | the AI working agreement: dispatch, gates, 4-round review, evidence sheets |
+| [`docs/架构与目录契约.md`](docs/架构与目录契约.md) | architecture and directory layout |
+| [`docs/contracts/接口契约.md`](docs/contracts/接口契约.md) | the exact command each step runs and where its output lands |
+| [`docs/穷举测试方案.md`](docs/穷举测试方案.md) | path exhaustion, strict boundaries, endpoint consistency |
+| [`docs/acceptance/每步验收标准.md`](docs/acceptance/每步验收标准.md) | per-step commands, hard and soft checks |
+| [`docs/UPSTREAM.md`](docs/UPSTREAM.md) | the five parts: source, pinned commits, license, two hard rules |
+| [`THIRD_PARTY.md`](THIRD_PARTY.md) | third-party components and licenses; three things to watch |
+
+> The documents under `docs/` are written in Chinese. `README.md` (English) and
+> `README_zh.md` (Chinese) are kept in sync; the rest are Chinese-only.
 
 ---
 
-## 许可
+## License
 
-**双轨**：[AGPL-3.0](LICENSE) 开源 + [商业授权](COMMERCIAL.md)。Copyright (c) 2026 Spiral QWQ。
+**Dual-licensed**: [AGPL-3.0](LICENSE) for open source, plus a
+[commercial license](COMMERCIAL.md). Copyright (c) 2026 Spiral QWQ.
 
-AGPL 的网络条款意味着：任何人拿这套代码改一改再发布，**包括搭成网站给别人用**，
-他改过的东西也必须以 AGPL 公开。不想满足这个条件的，走商业授权。
+The AGPL network clause means that anyone who takes this code, changes it, and
+distributes the result — **including running it as a website for other people** —
+must publish their changes under AGPL too. If that is not acceptable, use the
+commercial license.
 
-第三方组件与许可见 [`THIRD_PARTY.md`](THIRD_PARTY.md)——其中 mineru 用自定义许可、
-pymupdf 是 AGPL/Artifex 双轨，这两条买商业授权时也要单独处理。
+Third-party components and licenses: [`THIRD_PARTY.md`](THIRD_PARTY.md). Two of
+them matter if you are buying a commercial license: mineru uses a custom license,
+and pymupdf is AGPL-or-Artifex-commercial — neither is covered by a license to
+this repository.
+
+---
+
+## Contributing
+
+See [CONTRIBUTING.md](CONTRIBUTING.md). Two rules specific to this project:
+never edit anything under `parts/` (part bugs go upstream, then the pin is
+bumped), and never commit a machine-specific path, a username, the internal
+codename, or a key.
+
+## Changelog
+
+[CHANGELOG.md](CHANGELOG.md) (English) ·
+[CHANGELOG_zh.md](CHANGELOG_zh.md) (Chinese).
+
+## Support
+
+If this project helps you, feel free to buy me a coffee. Donation is entirely
+optional — the project stays free and open source forever.
+
+<p align="center">
+  <img src="assets/donate_wechat.jpg" alt="WeChat Pay" width="200">
+  <img src="assets/donate_alipay.jpg" alt="Alipay" width="200">
+</p>

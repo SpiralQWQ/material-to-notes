@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "material-to-notes"
-version = "0.1.0"
+version = "1.0.0"
 description = "Orchestration layer that chains five open-source tools into a material-to-notes pipeline"
 requires-python = ">=3.10"
 dependencies = []

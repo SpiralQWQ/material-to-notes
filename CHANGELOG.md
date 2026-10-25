@@ -1,163 +1,123 @@
 # Changelog
 
-本项目遵循 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/) 与 [语义化版本](https://semver.org/lang/zh-CN/)。
+All notable changes to this project are documented in this file.
+
+The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
+and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
-### Fixed
+## [1.0.0] - 2026-10-25
 
-- **隐私扫描此前对 `parts/` 完全失明，却打印 `clean`**：`scripts/privacy_check.py` 的文件清单取自 `git ls-files`，
-  而五个零件副本是「vendored 但从不提交」的，于是 git 对它返回空、`vendored` 列表恒为空，
-  **560 个零件文件一个都没扫，输出却是一句干净的 `clean`**。一个不查看就报告的守卫，比没有守卫更坏。
-  改为：**我们自己的文件仍走 git**（`temp/` 与 `runs/` 是 gitignore 的用户素材与过程脚本，扫它们只会把真信号埋掉），
-  **`parts/` 改为 `os.walk` 走磁盘**（排除 `.git` / `__pycache__` / `.pytest_cache` 等缓存）。
-  配套 7 条测试，其中 `test_main_reports_a_hit_that_git_cannot_see` 直接测 `main()`——
-  第一版守护只测了 `vendored_files()` 函数，把 `main()` 改回 git 来源时它照样全绿，等于没守住；
-  补上这条后，红绿双验在「模拟 bug 复发」时精准变红。
-- 删掉 `parts/document-to-markdown/_data/` 那 6 个运行态 `plan*.json`：它们含 **12 处本机绝对路径**
-  （含 12 处本机绝对路径，指向 `runs/` 下的素材副本），不是零件内容，是本机跑出来的垃圾。
-  已实测删除安全——`dtmd/config.py` 在 import 时 `os.makedirs(DATA_DIR, exist_ok=True)`，目录会自动重建，CLI 正常。
-  原件备份在 `temp/_backup_20261024/dtmd_data_before/`。
-  删后零件副本的隐私命中里，**涉及本机真实路径/内部目录名的从 30 处降到 0 处**（总命中 67→39，剩下的经逐条核对全是误报：
-  GitHub 仓库 slug 撞 `sk-` 正则 15 处、测试假路径 11 处、README 占位符 4 处、文档示例与 CI 扫描模式本身 9 处）。
+First public release, dual-licensed under AGPL-3.0 plus a commercial license.
 
-- **B-7 修好：ASR 断句残留的句首标点不再流进产物**（`media-to-markdown` 与 `text-cleaning-engine`
-  **两个仓库一起改**，因为 `_PUNCT_PAIRS` 是同源副本，只改一个会让两边清洗结果分叉）。
-  两个缺口叠加：规则表**全是两两配对**（`。，`→`。`、`，。`→`。`…），没有一条针对"串首"；
-  而 `.strip()` 去的是**空白不是标点**。于是 ASR 在「。」后断句时落到下一句开头的逗号原样活下来。
-  实测（9 分钟视频）265 句里 **41 句**句首是标点（15%），渲染后仍可见 **22 行**。
-  改法：新增 `strip_leading_punct()` / `_strip_leading_punct()`，在 `norm_punct` **之后**调用
-  （先把 `。，` 压成 `。`，两个标记再一起走）；**只去串首连续那一段**，句中与句尾不碰。
-  验证：m2m **130 passed**（原 125 + 新 5）、tce 5 个测试文件全 OK（新增 `test_leading_punct.py` 13 条）；
-  两边行为对照 **9 个案例全部一致**；红绿双验通过（改回旧实现，测试精准变红）。
-  提交并**已推送**：m2m `e1c111e..6c09e20`、tce `48a8099..aa44c14`（2026-10-24）。
-  > 顺带发现一处**与本次无关的既有差异**：俄语 `Привет мир` 在 tce 被清空、在 m2m 保留——
-  > tce 的判据是 `[A-Za-z0-9一-鿿]`，m2m 用 `isalnum()`（m2m 专门修过这个，tce 没有）。未动，超出 B-7 范围。
+### Added
 
-- **B-9 修好：费曼示范检查改为逐点判定，且只在该点的示范角度块内计数**（`md-rewrite-engine`，
-  提交 `bbc8de7`）。旧实现数**整个知识点正文**的圈数字 ①②③④⑤，而「易错点」几乎每点都用 ①②③④ 列举，
-  随便一个知识点就能凑够下限——于是这项检查测的是"有没有列举符号"、不是"有没有示范角度"，
-  **整块示范角度被删掉也照样判过**（第 4 章初稿 13 个知识点漏写、零件仍报 ✅）。
-  2026-10-24 复现实测：删掉一个知识点的整块示范角度，**改前判 ✅ exit 0，改后判 ❌ exit 1**。
-  改法：新增 `_DEMO_LABEL` / `_SIX_ITEM` / `_demo_block()`，逐点切出「❓ 示范角度」标签行之后、
-  到下一个六件套项之间的片段，只在这个范围内数。**判定仍是逐点**，所以某一点缺了、
-  别的点有多余的也补不上来。标签同时兼容 `示范角度` 与规范里的 `费曼思考题` 两种叫法。
-  验证：零件 **250 passed**（原 246 + 新 4）；红绿双验通过（把计数行改回全文，2 条测试精准变红）；
-  **20 份成品笔记复测 19 份通过、零误判**——唯一失败的 `doc1` 是旧布局
-  （`### 费曼示范（知识点一）` 而非 `### 知识点 N.M · 标题`），git `d8fe686` 早已记载
-  「命名不兼容而非内容退化，不改历史产物」，与本次改动无关。
-  > 改这个的同时暴露了零件自己的一个**测试样本不合规**：`test_variants_warning_not_blocking`
-  > 的样本没有任何示范角度标签，只在末尾扔了两个光秃秃的圈数字——正是 B-9 描述的、旧门禁会放行的形状。
-  > 样本已补上标签行（测试意图"变体 warning 不翻判定"不变）。
-  > 已推送（2026-10-24）。
+- **`scripts/setup_parts.py`** — fetches the five parts on first use, pinned to a
+  known-good commit. `--check` reports what is missing, `--update` re-applies the
+  pins, `--force` re-clones, `--mirror` routes through a China mirror (the
+  `gh-proxy` preset was verified on 2026-10-25; presets go stale, so any full URL
+  prefix works too).
+- **`scripts/setup_engines.py`** — builds one virtual environment per engine and
+  records the paths in `.env`. Installs per pipeline line rather than all at once:
+  `--line document` is ~0.1 GB (parsing goes to the MinerU cloud API),
+  `--line fetch` ~0.7 GB, `--line clean` ~1.4 GB, `--line media` ~3.7 GB,
+  `--all` ~7 GB. Local MinerU is deliberately opt-in via `--line document-local`
+  and marked not recommended. ffmpeg is detected but never downloaded — fetching
+  an executable from the internet inside a setup script is a supply-chain risk.
+- **`docs/UPSTREAM.md`** — where the five parts come from, which commits are
+  pinned, under what license, and the two rules that go with bumping a pin.
+- **`THIRD_PARTY.md`** — third-party components and licenses, and three things
+  that matter: mineru uses a custom (non-OSI) license, pymupdf is
+  AGPL-or-Artifex-commercial, and torch carries BSL-1.0 among its licenses.
+- **Community files** — `CONTRIBUTING.md`, `CODE_OF_CONDUCT.md`, `SECURITY.md`,
+  issue and pull-request templates, and a CI workflow that fetches the parts,
+  runs the suite, and runs the privacy scan.
+- **`tests/conftest.py`** — a preflight that turns "the parts were never fetched"
+  from 39 `FileNotFoundError`s into one skip that names the command to run, and
+  forces a non-zero exit so a run that verified nothing is never reported green.
+- **Test suite: 514 tests** (unit + e2e + exhaustive). It needs only `pytest` and
+  `pyyaml` — it reads the parts' files, it does not import them, so none of the
+  engines are required to run it.
 
 ### Changed
 
-- **五个零件副本与各自上游仓库现已零差异（口径：忽略换行符，副本 CRLF / 上游 LF）、且都与远端同步**。此前有两处副本落后上游（都是隐私/硬编码类修复）：
-  `web-knowledge-crawler` 落后 `c6aae37`（4 处写死的 Edge 浏览器安装路径）、
-  `document-to-markdown` 落后 `ce7d42a`（6 处本地路径/目录名）。按「只拷有差异文件、保持副本原 CRLF」精准同步，
-  **没有用 `git archive` 整体重搬**——那会删掉库内特有的 `UPSTREAM.md` / `PATCHES.md`，并把 187 个文件刷成 LF。
-- **回灌清单 A-8（md-rewrite-engine 目录锚点修复）已推送到上游**：`fb2be4e`，`e0031e3..fb2be4e` → `origin/master`。
-  推送前三层隐私扫描干净（提交内容 23 行新增零命中 / 整个仓库 98 个追踪文件仅 1 处文档示例误报 / 提交信息零命中）。
-  **至此 A-1~A-9 九条全部落地，A 区无遗留。**
+- **The five parts are fetched, not vendored.** Copying them into this repository
+  created two authoritative copies that drift apart silently, and made the
+  repository read as an aggregation rather than a project. The lock table in
+  `setup_parts.py` plus `docs/UPSTREAM.md` replace the copies.
+- **`privacy_check.py` no longer has two blind spots that made it lie.** It used
+  to build its file list from `git ls-files` alone, so a file nobody had added
+  yet — exactly where an unnoticed leak lives — was never scanned while the
+  script still printed `clean`. It now uses git *and* a bounded disk walk, which
+  also makes it work on a `git archive` export with no git at all. It also no
+  longer dies on a GBK console: the report quotes file contents verbatim, and a
+  character the console could not encode used to raise `UnicodeEncodeError` and
+  exit non-zero for a reason unrelated to privacy.
+- **Its pattern set is wider.** It checked four shapes and missed the internal
+  project codename, the local directory tree, and a user profile on any drive
+  other than `C:`. Those are now covered, and the absolute-path rule requires two
+  path components so an escaped `\n` inside a Python string literal is not
+  reported as a path.
+- **The command is `material-to-notes`.** The repository, the distribution name,
+  the CLI command, and the import name are one name, matching the other
+  repositories in this family.
 
-### Documentation
+### Fixed
 
-- 文档状态与磁盘实际对齐：`README.md` 状态段重写（Task 编号 T28→T116、成品笔记 20 份按四条线分列、
-  补上爬取线硬拦位置、补测试数）、文档索引补 2 份、加本机未安装提示；
-  `docs/contracts/接口契约.md` 的 media 由「待实测」改「已实测」；`docs/实跑清单.md` 现状补注更新；
-  `docs/Task清单.md` 五个工单（T37/T56/T57/T58/T63）按项目既有惯例补 `~~已修~~` 标记；
-  `docs/补丁重构计划报告.md` 加「本文档为 2026-10-15 晚快照」状态头；`docs/回灌清单.md` A-8 与 B 区段头改成实际状态。
-  **历史流水账里的数字（387/404/413/474 passed 等）一律未改**——那是当时的真实实测记录，改了就把 51 轮验收的可追溯性毁掉。
-
-
-<!-- 以下为 2026-10-15 及更早批次的 Fixed 条目，按原样保留；与上面三段的差异只在时间，不在类型 -->
-
-- 写笔记的任务单上不再印 `执行：pipeline step … note` 那一行。那条命令会用零件**重新生成** `04_笔记/<名>.md`、把写手刚手写的产物顶掉，而同一张单上又写着"由你亲自写笔记"——照单执行就会误覆盖。现在改为明文禁令。
-- 总进度单不再永远缺 `note` 那一行。笔记由 agent 手写、不走 `pipeline step`，所以跑完那条链生成的进度单里从来没有它；现在 `pipeline gate <工作目录> note` **通过时**把它补上（不通过一个字都不写）。连带：`skipped` 且产物在的步骤，状态从"跳过"改为"**完成（本轮未重跑）**"——有产物却只写"跳过"会被读成"这一步没做"。
-- 派活单写得太早：`run` 原先在跑 document/clean **之前**就把「写笔记」的任务单写好，那时清洗产物还不存在，于是单子上的输入清单是空的——写手连该产出哪几个文件都不知道。改为**上游跑完之后**才写；上游没跑通就不发单（避免写手对着不存在的输入开工）。
-- 派活单上只写产物词干（`C202111046833`）不写扩展名（`.md`），写手可能产出没有扩展名的文件；改为按步骤补上扩展名。
-- **派活单新增「不许注水」七条**（2026-10-16，同一批可读性实测查出来的通病）：同一件事全篇只详述一次、别处只**指路**不重述；`易错点` 只放读者真会犯的错（源文勘误归 `📌 元信息`）；**一处编号只许一套体系**（正文 `1.3` 与附录引用用同一套，不许写「知识点三」）；**附录紧跟核心知识点、排在 `📖 专业词汇表` 之前**；自己重建的公式必须能渲染（`\begin{cases}` 的分支换行**必须是 `\\`**，实测踩过写成 `\ ` 导致两分支挤成一行）；「源文没写」的内容必须显式标注、不许混在硬规则里。
-- **「示范角度」被写成了"满稿讲解"**（2026-10-16）。对 10 份已有笔记做可读性实测（只喂笔记、禁读原文），四批测试者各自独立报出同一个毛病：**同一知识点里「通俗类比」与「示范角度①」讲的是同一件事，常常几乎逐字相同**——10 份全中，并且这块占了全篇 12–22% 的篇幅。根因是派活单同时要求这两条、却没说清分工；而零件规范**自己写着**它俩各干什么（"教学留白：给 AI 考察线索，AI 可自行展开，**不写满教学稿**"）。现在派活单**把规范那句话读出来**（`orchestrate/spec.py::feynman_policy`，不手抄），并写明：示范角度只写一两句线索、**不许复述** `通俗类比` / `原理` / `易错点` 里讲过的话，另附一条逐点自检。
-- 版本号三处不一致：`pyproject.toml` 与 `material_to_notes.__version__` 都是 `0.0.1`，而本文件的 `[0.1.0]` 已宣告发版。现两处代码统一为 **`0.1.0`**（以已宣告的发版为准）。
-- 门禁子进程不再因编码而假失败：`pipeline gate` 起 mre 的 `gate_check.py` 时现在传完整环境 + `PYTHONIOENCODING=utf-8`。此前在没设编码变量的终端里，mre 报告里的 ✅ 会让子进程以 GBK 编码崩溃，于是**好笔记被判成坏的**，报告里满是 `UnicodeEncodeError`。
-- 目录刷新不再在笔记里留下多余的 `---`：`pipeline toc` 整套交给零件（`toc_gen.py --apply` 现在发现已有目录就重建）。此前本层会先自己剥一遍旧目录块，而那段剥离切到块尾的 `---` 之前就停手，**每刷新一次就多一行孤儿 `---`**（7 份笔记实测共 9 行，已一并清掉）。
-- "聚合豁免"的知识点覆盖判据不再与规范自相矛盾：覆盖条件的分母改用**有实质内容的源单元**（与"逐单元膨胀率"同一把尺），不再把源文里只有几行的标题残段算成待覆盖单元。此前**越照规范写、覆盖越低**——同一份内容只改形状就从 81% 掉到 64%，被判"疑似偷工"。连同本层为此设的放行一并删除：留着它会把**真正的**覆盖不足也静默放行。
-- 零件门禁不再"空集判过"：一个知识点都切不到时，六件套与费曼示范判**失败**并写明原因，不再照旧打印 `✅ 全部完整` / `✅ 每点≥2`。
-- 报告口径：按验收标准 B-2 放行的条目改标为 `PASS(按验收标准 B-2 放行)`，不再写成"绕行"（它是验收标准，不是零件缺陷的绕行），也不再在自己的放行判定后抄一句零件结尾的"→ 打回"。
-- 大书（超过 MinerU 单文件 200 页上限）此前跑不通：dtmd 会把它按章节边界切成 `p{start}-{end}/` 块，而 `convert` 不会拼回去。现在 `document` 步在 convert 之后、enrich 之前调用 `dtmd merge`，把切片合回根目录的 `full.md`。此前缺口是**静默的**：根目录没有 `full.md` 时 enrich 会被悄悄跳过，图表内容全丢。
-- 清洗步默认模式改为只剥渠道水印（`--watermark-only`）：此前走 tce 全规则，在一篇 28 页论文实测把 1118 行压成 1 行、18 个表格单元清零、88 个公式块清零，而工具退出码仍是 0。全规则保留为 `--deep-clean` 显式开关。
-- 陈旧失败单不再残留：一次跑通之后，上一轮留下的 `失败单.md` 会被清掉。此前两张单会互相矛盾（失败单说某步挂了，进度单说该步完成）。
-- `pipeline step` 的「总进度单」不再只剩当前一步：改为与本工作目录的状态合并，按步骤顺序列出所有已完成步骤。单步入口是主路径，此前它每跑一步就覆盖掉之前的记录。
-- 矩阵**漏写**行分隔符时门禁看不见：`note-formula-renders` 此前只查「分隔符写成了单个反斜杠 + 空格」这一种形态，分隔符**根本没有**时矩阵会并行，而它照样判 PASS（2026-10-22 第 3 章笔记的矩阵速查表两处实测，肉眼读附录才发现）。现在加判「矩阵各行的 `&` 数必须一致」；省略号行（`\dots` / `\vdots` 一类）豁免——省略写法本来就不带 `&`，2026-10-22 在 `runs/doc3` 实测踩过这个误报。
-- 第 2 章笔记里有两处示范角度与自测题撞题，第 1 章自检与第 2 章返工都没抓住（2026-10-22 用相似度扫描才发现）：2.1① 与自测 1 问的是同一件事，2.6① 与自测 6 都在问「四个步骤」。两处已换成真正的另一个角度，复扫后不再有近逐字对。
-
-### Added
-
-- **派活单的"笔记形状"改成派活时从零件现场读出来**（Task-11）：新增 `orchestrate/spec.py`，
-  从零件的 `note_style_spec.yaml` 读 frontmatter 字段与顺序、正文栏目与顺序、六件套标签、示范角度数量；
-  从零件的 `scripts/gate_check.py`（用 `ast` 读，**不执行**）读门禁真正解析的标签与标题形状。
-  此前这段是**手抄**在 `pipeline.py` 里的——它和规范一旦分头演化就再也对不上，
-  而 2026-10-15 那批写歪的笔记正是这么来的。规范新增栏目而派活单不认识时**直接报错**，不再静默跳过；
-  测试锁住"改规范文件 → 下一张派活单跟着变"。
-- `docs/穷举测试方案.md` §七「CLI 路径穷举闭包表」：七条轴（入口 / 五步 × 命令行 / 多素材 / 投料单有无 /
-  门禁可跑性 / 中断重跑 / 清洗两档）逐取值点名谁验它，跨轴交点单列，验不了的显式登记。
-  按表补 `tests/exhaustive/test_cli_surface.py` **8 条**。
-- `docs/SOP.md` §七：把 4 轮审核（完成度 / 回归影响 / 隐蔽缺陷 / 质量设计）、证据单四要素、
-  终点一致性、组长验收五步写成硬动作。
-- `temp/README.md`：说明 `temp/` 里哪些在用、哪些是一次性的。
-
-- **一个工作目录装多份素材**（T33，契约变更）：产物按**素材**命名（`03_清洗/<名>.txt`、`04_笔记/<名>.md`），
-  接力契约从"多于一份就拦"改成**逐份循环**，并新增**撞名守卫**（两份素材会写成同一个名字时停下问人）。
-  此前写死的 `full.txt` / `note.md` 让第二份素材必然撞名。
-- **投料单**（`_元数据/投料单.json`，`pipeline intake`）：初始化时问三件——素材叫什么、笔记放哪、
-  给谁看——**答一次即复用**，不答全走默认且开跑前会明说本次用的是默认。新增 `pipeline deliver`
-  把笔记拷到指定交付目录。
-- **元数据独立目录 `_元数据/`**：投料单 + 每份素材一份记录（来源、时间、各步产物、统计）。
-  清洗步的统计从 `03_清洗/*.meta.json` 挪进来，于是交付目录里只剩交付物。
-- **产物版本留底**：派活那一刻（`pipeline assign` 与每一步执行前）自动把该步现有产物拷进
-  `_state/快照/<步骤>/<时间戳>/`，`pipeline snapshots <工作目录> <步骤>` 列出。此前「原件留底绝不覆盖」
-  只覆盖输入素材，我们自己的产物没有历史，于是"打回修复只改了几处"**无法 diff 自证**。
-  快照不自动清理——那是证据。
-- note 步的**内容硬卡**（`gates/content.py`，经 `pipeline gate <工作目录> note` 触发）：
-  自己判 frontmatter / 篇内目录 / 专业词汇表 / 元信息节，并**真正调用** mre 的 `scripts/gate_check.py`
-  判六件套 / 费曼示范 / 机械对账 / 丰富度。此前这些只有写笔记的 agent 自己跑一次报个数字，判定属自报。
-  门禁跑不起来（缺 `MRE_DIR` / 缺脚本 / 缺基准源）一律**判失败**，不静默放行；`--contract-only` 可退回只跑通用契约。
-- 结构保真门禁 `contract.validate.structure_loss()`：行数 / 标题 / 公式 / 表格单元 / 代码围栏五类标记，
-  任何一类留存低于 90% 即判本步失败，并把损失写进该素材的记录，防止「工具说成功、内容却被吃掉」。
-  `--deep-clean` 不豁免。
-- `scripts/verify_fidelity.py`：把笔记里每个有信息量的数字回源全量核对。**必须先规范化 OCR 拆开的数字**
-  （源文实测 `1. 8 5 3 2`），否则会把忠实转写判成幻觉。
-- CLI `run` / `step` 新增 `--deep-clean`。
-- CLI `run` / `step` 新增 `--force`：忽略续跑记录强制重跑。改了某一步的**代码**但输入指纹没变时，
-  resume 看不出它需要重做，此前只能手工清 `_state/run_state.json`。
-
-- **派活单新增「交稿前自检三道」**（`orchestrate/discipline.py` 的 `SELF_CHECK_PROCEDURES`，2026-10-22）：
-  ① 撞题自检——示范角度与自测题两张表两两比，判据是「这条示范角度能不能直接回答那道自测题」，**换成问法不算换角度**；
-  ② 台账回读——元信息每条「已写入正文」类声称都要挑关键词到正文里真搜一次，搜不到就二选一（补正文 / 改声称）；
-  ③ 规则句实推——方向 / 符号 / 大小 / 终止条件这类一句话规则，每句代两组数（正常 + 证伪边界）。
-  三道统一要求**结论与证据写进回报、不进正文**，与「免责句全清」不冲突；`pipeline checklist note` 同步加「撞题」「台账回读」两条，
-  写手与审核两端同时堵。加这三道的理由：这两类问题在第 1、2 章**都是靠事后审核或教学测试抓回来的**，写手交稿时自认没问题。
-
-- **派活单写明 `word_count` 口径**（`orchestrate/pipeline.py::_BRIEF_HEAD`，2026-10-22）：这个字段填**源文**（`03_清洗/<名>.txt`）的字符数（含换行），不是笔记自己写了多少字；且每次写盘或跑 `pipeline toc` 后都要重填——文件一改字数就变，不重填这个字段永远追着旧快照。项目文档（`docs/媒体线测试计划.md` 570/703/794 行）本来就写明是源文口径，派活单此前没说，第 3 章的笔记因此填成了自身长度。
-
-## [0.1.0] - 2026-10-07
-
-首个版本：把五个已开源工具串成一条「素材 → 学习笔记」流水线的编排层。
-
-### Added
-
-- 契约层 `contract/`：步骤定义（单一事实源）、工作目录布局、产物校验、外部命令运行器。
-- 执行适配层 `steps/`：五个零件的薄适配器（wkc / dtmd / m2m / tce / mre）。
-- 编排层 `orchestrate/`：工作台初始化、选路、串行 runner、断点续跑、失败处理、装配。
-- 门禁层 `gates/`：机器门禁（保留原始证据）、审核检查单（含语义保真 / 幻觉 / 成本三条全局项）。
-- 记录层 `report/`：总进度单、JSONL 运行日志。
-- 命令行入口 `cli/`：`init` / `route` / `gate` / `checklist`。
-- 文档 `docs/`：架构与目录契约、Task 清单、穷举测试方案、SOP、补丁重构计划报告、终点一致性报告、验收报告。
-- 测试：单元 + 端到端 + 穷举，共 188 个。
+- Gate messages and dispatch sheets told the user to run `pipeline toc`,
+  `pipeline step`, `pipeline gate`, `pipeline run`, and `pipeline checklist` —
+  commands that no longer exist after the rename. Every one of those strings is
+  now the real command name.
+- `argparse` still reported the program as `pipeline` in usage text and
+  `--version`.
+- `write_env` in `setup_engines.py` edits `.env`, which holds real API keys. It
+  now edits lines in place and appends only genuinely new keys, rather than
+  rewriting the file from what it parsed — the latter drops comments and any key
+  it did not recognise, which is how a person loses a key they did not back up.
+- The absolute-path rule used to match `Di` + `sk-` inside a GitHub repository
+  name such as `Acronis-Disk-Director-...`, filling the report with hits nobody
+  could clear. It now requires a word boundary.
 
 ### Notes
 
-- 五个零件保持独立；本工具只通过「文件接力 + 命令行调用」使用它们。对零件的改动遵循「只加不改、先报批」。
-- 真实零件实跑需本机环境，未覆盖项见 `docs/验收报告.md` 第六节。
-- 已知取舍见 `docs/验收报告.md` 第七节。
+- **This changelog is scoped to this repository.** It does not record changes made
+  to the five parts: those belong to their own changelogs, and this repository
+  consumes them through pinned commits. The detailed internal development log,
+  including per-part fixes and the 51 rounds of acceptance that produced them,
+  stays in the source project and is not published here.
+- The document line runs against the MinerU **cloud API** by default. The local
+  engine is available (`--mode local`) and deliberately not recommended.
+- The note-writing step is intentionally not automated. See the README section
+  "It is semi-automatic, not automatic" and [`docs/SOP.md`](docs/SOP.md).
+
+## [0.1.0] - 2026-10-07
+
+First version: an orchestration layer chaining five open-source tools into one
+material to study-notes pipeline.
+
+### Added
+
+- **Contract layer** `contract/` — step definitions (single source of truth),
+  workdir layout, output validation, external command runner.
+- **Adapter layer** `steps/` — one thin adapter per part (wkc / dtmd / m2m / tce / mre).
+- **Orchestration layer** `orchestrate/` — workspace init, routing, serial runner,
+  resume, failure handling, assembly.
+- **Gate layer** `gates/` — machine gates that keep their raw evidence, plus the
+  review checklist (with three global items: semantic fidelity, hallucination, cost).
+- **Reporting layer** `report/` — progress sheet, JSONL run logs.
+- **CLI** `cli/` — `init` / `route` / `gate` / `checklist`.
+- **Documentation** `docs/` — architecture and directory contract, exhaustive test
+  plan, SOP.
+- **Tests** — unit + e2e + exhaustive, 188 in total.
+
+### Notes
+
+- The five parts stay independent; this tool uses them only through file hand-off
+  and command-line invocation.
+- Running against the real parts needs a local environment; what was not covered
+  at the time is recorded in the source project, not here.
+
+[Unreleased]: https://github.com/SpiralQWQ/material-to-notes/compare/v1.0.0...HEAD
+[1.0.0]: https://github.com/SpiralQWQ/material-to-notes/releases/tag/v1.0.0
+[0.1.0]: https://github.com/SpiralQWQ/material-to-notes/releases/tag/v0.1.0
