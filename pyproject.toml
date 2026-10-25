@@ -1,0 +1,29 @@
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "material-to-notes"
+version = "0.1.0"
+description = "Orchestration layer that chains five open-source tools into a material-to-notes pipeline"
+requires-python = ">=3.10"
+dependencies = []
+
+[project.scripts]
+material-to-notes = "material_to_notes.cli.main:main"
+
+[tool.setuptools]
+package-dir = {"" = "src"}
+packages = [
+    "material_to_notes",
+    "material_to_notes.contract",
+    "material_to_notes.steps",
+    "material_to_notes.orchestrate",
+    "material_to_notes.gates",
+    "material_to_notes.report",
+    "material_to_notes.cli",
+]
+
+[tool.pytest.ini_options]
+pythonpath = ["src", "tests", "scripts"]
+testpaths = ["tests"]

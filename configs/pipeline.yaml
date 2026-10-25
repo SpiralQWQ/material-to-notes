@@ -1,0 +1,11 @@
+# 管线配置模板。真实值走 .env 或运行时参数；本文件只放非敏感默认项。
+# 注意：工作目录布局的单一事实源在 contract/workdir.py，勿在此重复定义。
+
+run:
+  # 单步失败重试次数（每步独立计数）
+  max_retries_per_step: 3
+  # 是否启用 tce 收尾清洗
+  enable_final_clean: true
+
+logging:
+  level: INFO

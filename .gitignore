@@ -1,0 +1,32 @@
+# 过程文件（证据单、穷举测试产物）——不入库
+temp/
+
+# 真跑的工作目录：含用户素材副本与绝对路径，绝不入库
+runs/
+
+# 环境变量
+.env
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+build/
+dist/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# 编辑器 / 系统
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db
+
+# 零件由 scripts/setup_parts.py 一键拉取，不入库（见 docs/UPSTREAM.md）
+parts/
+
+# 七个外部引擎的独立 Python 环境（scripts/setup_engines.py 创建）
+.venvs/
