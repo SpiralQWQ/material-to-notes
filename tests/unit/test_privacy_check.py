@@ -178,7 +178,7 @@ def test_an_escaped_newline_is_not_an_absolute_path():
     assert not rx.search("if x not in t:" + bs + "n")
     assert not rx.search("frontmatter:" + bs + "n  - title")
     assert not rx.search("see C:" + bs + "download"), "a doc example is not a path"
-    assert rx.search("C:" + bs + "Users" + bs + "lenovo" + bs + "x")
+    assert rx.search("C:" + bs + "Users" + bs + "someone" + bs + "x")
     assert rx.search("E:" + bs + "AAA" + bs + "Program" + bs + "CC")
 
 
@@ -214,3 +214,36 @@ def test_utf8_stdout_never_raises_on_a_bare_stream(monkeypatch):
 
     monkeypatch.setattr(P.sys, "stdout", Bare())
     P._utf8_stdout()  # must swallow the missing reconfigure, not raise
+
+
+# --- the patterns that were too narrow to be worth anything -----------------
+
+def test_the_local_project_tree_is_caught():
+    # internal-name only knew one path. Every other directory this project
+    # lived in sailed straight through, so the pattern was widened.
+    rx = P.PATTERNS["local-tree"]
+    assert rx.search("mirrored from " + "AAA" + chr(46) + "GitHub_MySorces")
+    assert rx.search("under " + "AAA" + chr(46) + "Study" + chr(92) + "M" + chr(46) + "AIStudy")
+    assert not rx.search("AAA rated, AAA battery")
+
+
+def test_the_internal_codename_is_caught():
+    rx = P.PATTERNS["codename"]
+    assert rx.search("# " + P.CODENAME)
+    assert not rx.search("# material-to-notes")
+
+
+def test_a_repository_name_is_not_an_api_key():
+    # "Acronis-Disk-Director-..." in a list of GitHub repo names matched
+    # sk-Director and the report filled with hits nobody could clear.
+    rx = P.PATTERNS["api-key"]
+    assert not rx.search("Acronis-Disk-Director-Data-Recovery/Partition-Manager")
+    assert not rx.search("Risk-Prediction-with-Fairness-Geography")
+    assert rx.search("key = sk-" + "a" * 30)
+
+
+def test_the_scanner_does_not_match_itself():
+    # The file holds the patterns, so a literal in it would be a hit that can
+    # never be cleared — and the scan would never report clean again.
+    hits = [h for h in P._scan(P.own_files()) if h[0].endswith("privacy_check.py")]
+    assert not hits, f"the scanner matches itself: {hits[:3]}"

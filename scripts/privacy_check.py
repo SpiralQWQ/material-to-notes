@@ -34,6 +34,12 @@ BS = chr(92)
 # Built at runtime so this file does not match its own pattern (same reason the
 # upstream privacy guards exclude the file that holds the patterns).
 INTERNAL_NAME = "AAA" + chr(46) + "Program"
+# The internal codename this project used before it was renamed, and the local
+# directory tree it lived in. Both are assembled from code points for the same
+# reason: a literal here would make this file match itself the moment it is
+# tracked, and the scan would report a hit it can never clear.
+CODENAME = "_" + chr(0x603B) + chr(0x5DE5) + chr(0x5177)
+LOCAL_TREE = "AAA" + re.escape(chr(46))
 PATTERNS = {
     # A drive letter plus at least two path components. Requiring depth is what
     # keeps an escaped newline inside a Python string literal from matching:
@@ -43,9 +49,16 @@ PATTERNS = {
     # ignored, which is how the real leaks survive.
     "abs-path": re.compile(r"[A-Za-z]:" + re.escape(BS)
                            + r"[A-Za-z0-9_.$-]+([\\/][A-Za-z0-9_.$-]+)+"),
+    # Any drive, not just C:: the profile lives wherever the OS was installed.
+    "user-dir": re.compile(r"[A-Za-z]:" + re.escape(BS) + "Users"),
     "internal-name": re.compile(re.escape(INTERNAL_NAME)),
-    "user-dir": re.compile(re.escape("C:" + BS + "Users")),
-    "api-key": re.compile(r"sk-[A-Za-z0-9_-]{20,}"),
+    # The whole local project tree, not just the one path the older pattern
+    # knew about. Assembled from a code point so this comment cannot name it.
+    "local-tree": re.compile(LOCAL_TREE),
+    "codename": re.compile(re.escape(CODENAME)),
+    # \b matters: without it "Disk-Director" in a list of GitHub repo names
+    # matches as sk-Director, and the report fills with noise nobody can clear.
+    "api-key": re.compile(r"\bsk-[A-Za-z0-9_-]{20,}"),
 }
 SKIP_SUFFIX = {".pyc", ".png", ".jpg", ".jpeg", ".gif", ".webp", ".ico", ".db"}
 
