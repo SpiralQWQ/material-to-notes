@@ -582,5 +582,7 @@ def test_latex_quoted_in_inline_code_is_not_read_as_a_matrix():
     # 元信息里会**合法地**用反引号引用 LaTeX（如「41 处 `\begin{array}` 已还原」那条）。
     # 不剥行内代码，扫描器会从一处行内代码里的 begin 一路吃到几段之后的结尾，
     # 把正文一起吞掉，报出一处根本不存在的坏矩阵——2026-10-22 第 4 章实测。
-    note = "登记：`\begin{bmatrix}` 与 `\end{bmatrix}` 只是引用，`\` 写法已全部还原。"
+    # 必须是 raw string：普通字符串里 "\b" 是退格符，这个输入会被静默污染成 "<BS>egin{bmatrix}"，
+    # 测试仍然通过——但测的已经不是它注释里说的那个场景了。
+    note = r"登记：`\begin{bmatrix}` 与 `\end{bmatrix}` 只是引用，`\` 写法已全部还原。"
     assert _formula(note) is True

@@ -13,6 +13,7 @@ table rather than trusted.
 """
 
 import pathlib
+import subprocess
 import sys
 
 import pytest
@@ -87,3 +88,63 @@ def test_the_session_hook_does_nothing_when_the_parts_are_there(monkeypatch):
     session = FakeSession()
     C.pytest_sessionfinish(session, 0)
     assert session.exitstatus == 0
+
+
+# --- the banner has to survive pytest's capture ----------------------------
+#
+# The banner used to be a module-level print(). pytest captures stdout for the
+# whole session, so it was swallowed: a fresh clone printed nothing but
+# `524 skipped` and exit 1, with no hint of what to run. The preflight's whole
+# reason to exist is to give a readable reason, so a banner nobody can see is
+# the failure mode, not a cosmetic issue.
+#
+# Testing that `_announce` was *called* would not catch that. This runs pytest
+# for real in a checkout with no parts/ and asserts the text reaches stdout.
+
+def test_the_banner_reaches_the_user_on_a_fresh_clone(tmp_path):
+    conftest = REPO / "tests" / "conftest.py"
+    if not conftest.is_file():  # pragma: no cover
+        pytest.skip("no conftest.py beside this test")
+    (tmp_path / "tests").mkdir()
+    (tmp_path / "tests" / "conftest.py").write_text(
+        conftest.read_text(encoding="utf-8"), encoding="utf-8")
+    # A test that does nothing but exist, so there is something to skip.
+    (tmp_path / "tests" / "test_nothing.py").write_text(
+        "def test_ok():\n    assert True\n", encoding="utf-8")
+
+    out = subprocess.run(
+        [sys.executable, "-m", "pytest", "-q", "-p", "no:cacheprovider"],
+        cwd=str(tmp_path), capture_output=True, text=True,
+        encoding="utf-8", errors="replace")
+
+    assert out.returncode == 1, (
+        f"a run that skipped everything must not exit 0, got {out.returncode}"
+    )
+    assert "setup_parts.py" in out.stdout, (
+        "the preflight banner must reach stdout under default pytest capture. "
+        f"Got instead:\n{out.stdout[:800]}"
+    )
+    assert "parts/ is incomplete" in out.stdout
+
+
+def test_no_banner_when_the_parts_are_present(tmp_path):
+    # The banner is for a missing setup step. Printing it on a healthy checkout
+    # trains people to ignore it.
+    parts = tmp_path / "parts"
+    parts.mkdir()
+    for name in C.PARTS:
+        (parts / name).mkdir()
+    (tmp_path / "tests").mkdir()
+    (tmp_path / "tests" / "conftest.py").write_text(
+        (REPO / "tests" / "conftest.py").read_text(encoding="utf-8"),
+        encoding="utf-8")
+    (tmp_path / "tests" / "test_nothing.py").write_text(
+        "def test_ok():\n    assert True\n", encoding="utf-8")
+
+    out = subprocess.run(
+        [sys.executable, "-m", "pytest", "-q", "-p", "no:cacheprovider"],
+        cwd=str(tmp_path), capture_output=True, text=True,
+        encoding="utf-8", errors="replace")
+
+    assert out.returncode == 0, out.stdout[-800:]
+    assert "parts/ is incomplete" not in out.stdout

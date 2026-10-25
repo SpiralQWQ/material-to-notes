@@ -29,22 +29,34 @@ PARTS = (
 
 MISSING = [name for name in PARTS if not (REPO / "parts" / name).is_dir()]
 
-if MISSING:
-    print("\n" + "!" * 72)
-    print(f"parts/ is incomplete — missing: {', '.join(MISSING)}")
-    print()
-    print("  Run:  python scripts/setup_parts.py")
-    print()
-    print("The suite reads the parts' files (the note style spec, the gate")
-    print("labels), so without them it fails with FileNotFoundError instead of")
-    print("a readable reason. That is what this preflight replaces.")
-    print("!" * 72 + "\n")
+
+def _announce(config):
+    """Print the preflight banner where the user will actually see it.
+
+    A module-level print() does not work here: pytest captures stdout for the
+    whole session, so the banner was swallowed and a fresh clone showed nothing
+    but ``524 skipped`` and exit 1 -- no hint of what to run, which is the exact
+    thing this preflight exists to provide. The terminal reporter writes
+    straight to the terminal and bypasses that capture.
+    """
+    reporter = config.pluginmanager.getplugin("terminalreporter")
+    if reporter is None:  # pragma: no cover - terminalreporter is always there
+        return
+    reporter.write_sep("!", "parts/ is incomplete — missing: "
+                       + ", ".join(MISSING))
+    reporter.write_line("")
+    reporter.write_line("  Run:  python scripts/setup_parts.py")
+    reporter.write_line("")
+    reporter.write_line("The suite reads the parts' files (the note style spec, the")
+    reporter.write_line("gate labels), so without them it fails with FileNotFoundError")
+    reporter.write_line("instead of a readable reason. That is what this replaces.")
 
 
 def pytest_collection_modifyitems(config, items):
     """Turn "parts were never fetched" into a skip that says what to do."""
     if not MISSING:
         return
+    _announce(config)
     reason = ("parts/ is missing ({}) — run `python scripts/setup_parts.py` "
               "first; the suite reads the parts' files".format(", ".join(MISSING)))
     marker = pytest.mark.skip(reason=reason)
