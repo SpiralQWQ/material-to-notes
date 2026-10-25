@@ -12,7 +12,7 @@ change may not be worth making.
 What you actually ran and what it printed. "Tests pass" is not evidence; the
 command and its output are.
 
-- [ ] `python -m pytest -q` — expected **514 passed**
+- [ ] `python -m pytest -q` — expected **524 passed**
 - [ ] `python scripts/privacy_check.py` — must print `clean` and exit 0
 - [ ] `CHANGELOG.md` and `CHANGELOG_zh.md` updated under `[Unreleased]`
 

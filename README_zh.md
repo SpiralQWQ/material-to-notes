@@ -124,7 +124,7 @@ python scripts/setup_parts.py
 ### 第 3 步：验证
 
 ```bash
-python -m pytest -q        # 514 passed
+python -m pytest -q        # 524 passed
 ```text
 ---
 

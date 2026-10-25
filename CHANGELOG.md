@@ -34,7 +34,7 @@ First public release, dual-licensed under AGPL-3.0 plus a commercial license.
   AGPL-or-Artifex-commercial, and torch carries BSL-1.0 among its licenses.
 - **Community files** — `CONTRIBUTING.md`, `CODE_OF_CONDUCT.md`, `SECURITY.md`,
   issue and pull-request templates, and CI.
-- **514 tests** (unit + e2e + exhaustive). They need only `pytest` and `pyyaml`:
+- **524 tests** (unit + e2e + exhaustive). They need only `pytest` and `pyyaml`:
   the suite reads the parts' files, it does not import them, so no engine has to
   be installed to run it.
 

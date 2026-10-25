@@ -150,7 +150,7 @@ these mirrors do not last, so pass a full URL prefix once that one has gone).
 ### Step 3: verify
 
 ```bash
-python -m pytest -q        # 514 passed
+python -m pytest -q        # 524 passed
 ```text
 ---
 

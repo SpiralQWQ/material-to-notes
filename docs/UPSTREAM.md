@@ -58,7 +58,7 @@
 1. 在上游仓库看清楚那个 commit 改了什么（尤其有没有动入口文件、目录布局，以及 `md-rewrite-engine` 里的 `note_style_spec.yaml`
    与 `gate_check.py`——`orchestrate/spec.py` 直接读这两个文件）
 2. 改锁表 → `python scripts/setup_parts.py --update`
-3. 跑全量测试：`python -m pytest -q`（当前基线 **514 passed**）
+3. 跑全量测试：`python -m pytest -q`（当前基线 **524 passed**）
 4. 用一份真实素材端到端跑一条线，确认产物形状没变
 5. 上面四步全过，才提交
 

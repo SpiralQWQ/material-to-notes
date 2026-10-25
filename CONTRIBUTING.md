@@ -85,7 +85,7 @@ start, ask in the issue — maintainers are happy to guide.
 2. Fetch the parts and confirm the suite is green *before* you change anything:
    ```bash
    python scripts/setup_parts.py
-   python -m pytest -q            # 514 passed
+   python -m pytest -q            # 524 passed
    ```
 3. Make your change. The test suite needs only `pytest` and `pyyaml` — it reads
    the parts' files, it does not import them, so you do not need the engines.
