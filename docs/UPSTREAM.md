@@ -57,7 +57,7 @@
 
 1. 在上游仓库看清楚那个 commit 改了什么（尤其有没有动入口文件、目录布局、`configs/note_style_spec.yaml`、`scripts/gate_check.py`）
 2. 改锁表 → `python scripts/setup_parts.py --update`
-3. 跑全量测试：`python -m pytest -q`（当前基线 **486 passed**）
+3. 跑全量测试：`python -m pytest -q`（当前基线 **514 passed**）
 4. 用一份真实素材端到端跑一条线，确认产物形状没变
 5. 上面四步全过，才提交
 

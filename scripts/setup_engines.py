@@ -357,7 +357,7 @@ def main(argv=None) -> int:
 
     print("done. Next:")
     print("  python scripts/setup_parts.py      # fetch the five parts")
-    print("  python -m pytest -q                # 497 tests, all green")
+    print("  python -m pytest -q                # 514 tests, all green")
     if "main" in keys and len(keys) == 1:
         print("\nOnly the pipeline environment was installed. To run a line, add")
         print("what it needs — sizes are what this project measured on Windows:")
