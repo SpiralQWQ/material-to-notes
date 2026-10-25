@@ -6,11 +6,44 @@ build-backend = "setuptools.build_meta"
 name = "material-to-notes"
 version = "1.0.0"
 description = "Orchestration layer that chains five open-source tools into a material-to-notes pipeline"
+readme = "README.md"
 requires-python = ">=3.10"
+# AGPL is what this file states, matching the other repositories in this family.
+# The commercial track lives in COMMERCIAL.md rather than here, because a SPDX
+# expression cannot say "AGPL or, if you prefer, a paid exception".
+license = { text = "AGPL-3.0-or-later" }
+# No email on purpose: an address in a published file is a spam magnet, and the
+# GitHub profile URL is the reachable identity.
+authors = [
+    { name = "SpiralQWQ", url = "https://github.com/SpiralQWQ" },
+]
+keywords = [
+    "markdown", "notes", "pipeline", "orchestration", "study-notes",
+    "llm", "rag", "crawler",
+]
+classifiers = [
+    "Development Status :: 5 - Production/Stable",
+    "Environment :: Console",
+    "Intended Audience :: Developers",
+    "Intended Audience :: Education",
+    "License :: OSI Approved :: GNU Affero General Public License v3 or later (AGPLv3+)",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Education",
+    "Topic :: Text Processing :: Markup :: Markdown",
+    "Topic :: Utilities",
+]
 # The adapters run every part under this interpreter (sys.executable), so the
 # parts' light dependencies belong here. This list is the same fact as
 # PIPELINE.packages in scripts/setup_engines.py — tests/unit/test_setup_engines.py
 # asserts the two do not drift apart.
+#
+# It has to sit before [project.urls]: a TOML table swallows every key under it
+# until the next header, so an array placed after that header stops being
+# project.dependencies and becomes a URL. That mistake parses cleanly and breaks
+# packaging silently, which is why a test now reads this file as TOML.
 dependencies = [
     "PyYAML>=6.0",
     "requests>=2.31",
@@ -19,6 +52,12 @@ dependencies = [
     "mistune>=3.0.0",
     "pikepdf>=10.0.0",
 ]
+
+[project.urls]
+Homepage = "https://github.com/SpiralQWQ/material-to-notes"
+Repository = "https://github.com/SpiralQWQ/material-to-notes"
+Issues = "https://github.com/SpiralQWQ/material-to-notes/issues"
+Changelog = "https://github.com/SpiralQWQ/material-to-notes/blob/master/CHANGELOG.md"
 
 [project.scripts]
 material-to-notes = "material_to_notes.cli.main:main"

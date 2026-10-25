@@ -156,24 +156,80 @@ def test_the_pipeline_env_status_probes_the_interpreter(tmp_path, monkeypatch):
     )
 
 
+def _pyproject():
+    """pyproject.toml parsed as TOML, not as text.
+
+    The regex version of this test could not tell the difference between
+    ``dependencies`` living under ``[project]`` and the same array sitting under
+    ``[project.urls]`` — a TOML table swallows every key beneath it until the
+    next header. That mistake parses cleanly, breaks packaging, and leaves the
+    test green. Reading it as TOML is the only way to assert the structure.
+    """
+    try:
+        import tomllib
+    except ImportError:  # pragma: no cover - Python < 3.11
+        pytest.skip("tomllib needs Python 3.11+")
+    import pathlib
+    return tomllib.loads((REPO / "pyproject.toml").read_text(encoding="utf-8"))
+
+
 def test_pyproject_declares_what_the_pipeline_env_installs():
     # The coupling that let this ship: pyproject.toml said `dependencies = []`,
     # so `pip install -e .` installed nothing the pipeline imports. The two
     # lists are the same fact and must not drift apart again.
     import re
-    text = (REPO / "pyproject.toml").read_text(encoding="utf-8")
-    block = re.search(r"^dependencies\s*=\s*\[(.*?)^\]", text, re.S | re.M)
-    assert block, "pyproject.toml must declare a dependencies array"
-    declared = {d.strip().strip('"').lower()
-                for d in block.group(1).split(",") if d.strip()}
-    declared_names = {re.split(r"[><=~\s]", d)[0] for d in declared}
+    project = _pyproject()["project"]
+    declared = {re.split(r"[><=~\s]", d.strip().lower())[0]
+                for d in project.get("dependencies", [])}
     names = {re.split(r"[><=~\s]", p.strip().lower())[0]
              for p in S.PIPELINE.packages}
-    missing = names - declared_names
+    missing = names - declared
     assert not missing, (
-        f"pyproject.toml does not declare {sorted(missing)} — `pip install -e .` "
+        f"pyproject.toml does not declare {sorted(missing)} - `pip install -e .` "
         "would leave the pipeline unable to import them"
     )
+
+
+def test_pyproject_metadata_is_complete():
+    # The open-source gate asks for version / dependencies / license / author.
+    # All four were missing or empty at some point; this pins them.
+    project = _pyproject()["project"]
+    assert project.get("version"), "version is required"
+    assert project.get("dependencies"), "dependencies must not be an empty list"
+    assert project.get("license"), "license is required by the open-source gate"
+    assert project.get("authors"), "authors is required by the open-source gate"
+    assert project.get("readme"), "readme is what PyPI renders on the project page"
+    assert not any("@" in str(a) for a in project["authors"]), (
+        "an author email in a published file is a spam magnet"
+    )
+
+
+def test_the_command_entry_point_survives():
+    # `pip install -e .` is what puts `material-to-notes` on PATH, and the
+    # README's quick-start tells the user to run it. A pyproject edit that
+    # drops [project.scripts] takes the command away without failing anything.
+    project = _pyproject()["project"]
+    scripts = project.get("scripts", {})
+    assert "material-to-notes" in scripts, (
+        f"the CLI entry point is gone; scripts = {scripts}"
+    )
+    assert scripts["material-to-notes"].endswith(":main")
+
+
+def test_urls_are_urls_and_nothing_else():
+    # A TOML table swallows every key under it. Putting `dependencies` after
+    # [project.urls] turns it into a URL: the file still parses, packaging
+    # breaks, and a text-level test stays green.
+    project = _pyproject()["project"]
+    urls = project.get("urls", {})
+    assert urls, "project.urls is what GitHub and PyPI link back to"
+    for key, value in urls.items():
+        assert isinstance(value, str), f"{key} must be a string, got {value!r}"
+        assert value.startswith("http"), f"{key} is not a URL: {value!r}"
+    assert "dependencies" not in urls, (
+        "dependencies ended up inside [project.urls] - move it above that header"
+    )
+
 
 
 def test_no_dead_weight_in_the_pipeline_env():
