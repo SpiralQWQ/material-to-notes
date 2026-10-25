@@ -21,9 +21,9 @@ from material_to_notes.gates import review as _review
 from material_to_notes.orchestrate import pipeline as _pipeline
 from material_to_notes.orchestrate import router as _router
 from material_to_notes.orchestrate import workspace as _workspace
-from material_to_notes.steps import note as _note
 from material_to_notes.report import progress as _progress
 from material_to_notes.report import snapshots as _snapshots
+from material_to_notes.steps import note as _note
 
 EXIT_OK = 0
 EXIT_RUN_FAILED = 1

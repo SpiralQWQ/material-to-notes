@@ -24,7 +24,6 @@ or a crashed checker is a FAIL with the reason attached, not a silent pass.
 from __future__ import annotations
 
 import re
-import subprocess
 import sys
 from pathlib import Path
 

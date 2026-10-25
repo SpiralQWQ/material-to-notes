@@ -15,7 +15,6 @@ These tests read the workflow as data rather than re-running it, so they catch
 the same class of mistake without needing a CI run to notice.
 """
 
-import io
 import pathlib
 
 import pytest

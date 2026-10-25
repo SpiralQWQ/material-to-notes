@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """Exhaustive fidelity check: every number in the note, traced back to the source.
 
 This replaces "sample five fact points and eyeball them" with a full sweep. It is

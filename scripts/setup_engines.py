@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-# -*- coding: utf-8 -*-
 """Create the Python environments this pipeline's parts need, and record them.
 
 Run from anywhere. Builds one virtual environment per engine under
@@ -28,11 +27,10 @@ light dependencies belong there.
 from __future__ import annotations
 
 import argparse
-import os
 import shutil
 import subprocess
 import sys
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from pathlib import Path
 
 # Sizes are what this project measured on Windows; they are estimates, and the
@@ -394,7 +392,7 @@ def main(argv=None) -> int:
     else:
         keys = ["main"]
 
-    todo = [by_key[k] if k in by_key else FFMPEG for k in keys]
+    todo = [by_key.get(k, FFMPEG) for k in keys]
     total = sum(e.size_gb for e in todo)
     print(f"installing {len(todo)} environment(s)"
           + (f", roughly {total:.1f} GB" if total > 0.2 else ""))

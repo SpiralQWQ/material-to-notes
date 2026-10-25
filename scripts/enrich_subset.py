@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """Enrich only the images a document actually references, then embed them.
 
 dtmd's own ``enrich_dir()`` walks every file in ``images/``. On a real 28-page

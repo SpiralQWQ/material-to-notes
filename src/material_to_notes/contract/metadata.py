@@ -14,6 +14,7 @@ markdown. So a notes folder holds notes.
 
 from __future__ import annotations
 
+import contextlib
 import datetime
 import json
 import os
@@ -51,10 +52,11 @@ def _write_json(path: Path, data) -> Path:
             json.dump(data, handle, ensure_ascii=False, indent=2)
         os.replace(tmp, path)
     except BaseException:
-        try:
+        # The temp file may already be gone; that is not worth masking the
+        # original failure for, so the cleanup failure is suppressed and the
+        # real exception still propagates.
+        with contextlib.suppress(OSError):
             os.unlink(tmp)
-        except OSError:
-            pass
         raise
     return path
 

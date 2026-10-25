@@ -5,8 +5,7 @@
 
 import pytest
 
-from _mocks import DOC_SPEC, FETCH_DOC_SPEC, FETCH_MEDIA_SPEC, MEDIA_SPEC
-from _mocks import executors
+from _mocks import DOC_SPEC, FETCH_DOC_SPEC, FETCH_MEDIA_SPEC, MEDIA_SPEC, executors
 from material_to_notes.contract import workdir as W
 from material_to_notes.orchestrate import pipeline as PL
 

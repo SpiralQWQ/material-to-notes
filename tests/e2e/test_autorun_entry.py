@@ -4,8 +4,7 @@ from pathlib import Path
 
 import pytest
 
-from _mocks import DOC_SPEC, MEDIA_SPEC
-from _mocks import executors
+from _mocks import DOC_SPEC, MEDIA_SPEC, executors
 from material_to_notes.contract import workdir as W
 from material_to_notes.orchestrate import pipeline as PL
 from material_to_notes.orchestrate import runner as OR

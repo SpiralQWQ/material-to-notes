@@ -77,3 +77,34 @@ packages = [
 [tool.pytest.ini_options]
 pythonpath = ["src", "tests", "scripts"]
 testpaths = ["tests"]
+
+# Explicit, and deliberately short. Ruff's default rule set is version-dependent
+# — 0.17 turns on YTT/ASYNC/TRY and friends by default — so a linter whose rules
+# change on upgrade makes CI flip between green and red for reasons that have
+# nothing to do with the commit. Naming the rules keeps that stable.
+[tool.ruff]
+line-length = 100
+target-version = "py310"
+src = ["src", "tests", "scripts"]
+
+[tool.ruff.lint]
+select = [
+    "E",    # pycodestyle errors
+    "W",    # pycodestyle warnings
+    "F",    # pyflakes: unused imports, undefined names, f-string mistakes
+    "I",    # import order
+    "UP",   # pyupgrade: dead syntax for the supported versions
+    "B",    # bugbear: likely bugs, not style
+    "SIM",  # simplify: code that says the same thing in more words
+]
+ignore = [
+    # Long lines here are overwhelmingly CJK comments, where a character count
+    # says nothing about readability. The wrapper that matters is at 100.
+    "E501",
+]
+
+[tool.ruff.lint.per-file-ignores]
+# Tests assert on literal strings and build fixtures inline; the rules that fire
+# on them are noise, and a test file that reads like production code is not the
+# goal.
+"tests/*" = ["B011", "SIM", "E402"]

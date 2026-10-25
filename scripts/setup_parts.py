@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-# -*- coding: utf-8 -*-
 """Fetch the five parts this pipeline drives, pinned to known-good commits.
 
 Run from anywhere. Writes into ``<repo>/parts/<name>/`` and checks out the

@@ -17,7 +17,6 @@ from material_to_notes.orchestrate import router as RT
 from material_to_notes.orchestrate import workspace as WS
 from material_to_notes.steps import fetch
 
-
 # --- 空值 / 缺参 -----------------------------------------------------------
 
 def test_empty_input_is_unknown():

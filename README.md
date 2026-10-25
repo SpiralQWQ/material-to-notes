@@ -13,9 +13,12 @@
 
 ## Table of Contents
 
+- [Features](#features)
 - [It is semi-automatic, not automatic](#it-is-semi-automatic-not-automatic)
 - [Installation](#installation)
 - [Running it](#running-it)
+- [FAQ](#faq)
+- [Roadmap](#roadmap)
 - [Documentation](#documentation)
 - [License](#license)
 - [Contributing](#contributing)
@@ -50,6 +53,40 @@ python scripts/setup_parts.py --check  # report only, fetch nothing
 ```text
 Where they come from, which commits are pinned, and under what license:
 [`docs/UPSTREAM.md`](docs/UPSTREAM.md).
+
+---
+
+## Features
+
+**One pipeline out of five tools.** `material-to-notes run` chains fetch, convert,
+clean, and rewrite in one go. You do not learn five CLIs; you learn one command
+and a route table.
+
+**`route` tells you what will happen before it happens.** Point it at a PDF, a
+video link, a folder of images, or a terms file, and it reports which line that
+input takes and which parts will be invoked. Nothing is downloaded until you say
+so.
+
+**Install only the line you run.** The document line needs ~0.1 GB because parsing
+goes to the MinerU cloud API. The media line, which downloads torch, is the
+expensive one. `--line` picks; `--all` is opt-in, not the default.
+
+**Machine gates, not vibes.** Format, structure, and word count are checked
+mechanically, and `scripts/verify_fidelity.py` sends every informative number in
+a note back to its source. The one thing no script can judge — whether the note
+actually teaches — is left to a reviewer, deliberately.
+
+**Pinned parts, one command.** `setup_parts.py` fetches the five parts at commits
+this repository is known to work with. Upgrading a pin is a documented procedure
+(`docs/UPSTREAM.md`), not a silent `git pull`.
+
+**A privacy scanner wired into CI.** Absolute paths, usernames, the internal
+codename this project used before it was renamed, and key-shaped strings all fail
+the build. It reads the disk as well as git, so a file nobody has added yet is
+still scanned.
+
+**Honest test results.** With the parts missing the suite skips everything, prints
+the command that fixes it, and exits 1 — it never reports green without looking.
 
 ---
 
@@ -178,6 +215,91 @@ Eleven subcommands:
 | `gate` | run the machine gates for a step |
 | `toc` | add/refresh the in-document table of contents of a note |
 | `checklist` | print the review checklist for a step |
+
+---
+
+## FAQ
+
+**The pipeline stopped at the note step and did nothing. Is it broken?**
+
+No — that is the design. Format, structure, and word count are things a script can
+check; "does this actually teach the material" is not. So the code stops there,
+prints a task sheet, and hands the step to a reviewer. See
+[It is semi-automatic, not automatic](#it-is-semi-automatic-not-automatic) and
+[`docs/SOP.md`](docs/SOP.md). If you want a fully unattended rewrite, this is not
+that tool.
+
+**Do I have to install all 5–8 GB?**
+
+No, and you should not. `--line document` is ~0.1 GB because parsing goes to the
+MinerU cloud API. Add a line only when you run it. See the table under
+[Installation](#installation).
+
+**Why one virtual environment per engine?**
+
+Because their dependencies fight. `torch` and `funasr` pin a numpy that `opencv`
+rejects; `crawl4ai` wants playwright; `presidio` wants spaCy plus a downloaded
+model. One environment resolves to a version set that satisfies nobody. The parts
+are built for this — each heavy engine is invoked through a bridge script whose
+interpreter comes from an env var, so separate venvs are the design, not a
+workaround.
+
+**Cloud MinerU or local?**
+
+Cloud. The document line is built for the cloud API; the local engine is several
+gigabytes of models doing the same job. It stays installable as
+`--line document-local`, and it is marked not recommended. You need
+`MINERU_API_TOKEN` in `.env` for the cloud path — the free tier at
+[mineru.net](https://mineru.net/) is enough to try it.
+
+**`pytest` skipped everything and exited 1.**
+
+You have not fetched the parts. Run `python scripts/setup_parts.py`. The suite
+reads the parts' files (the note style spec, the gate labels) but does not import
+them, so a missing part is a setup problem and is reported as one rather than as
+39 `FileNotFoundError`s.
+
+**Can I use this commercially?**
+
+The orchestration layer is dual-licensed: AGPL-3.0, or a commercial license if
+AGPL's network clause does not fit your use. See [`LICENSE`](LICENSE) and
+[`COMMERCIAL.md`](COMMERCIAL.md). Note that the five parts carry their own
+licenses and are **not** covered by a commercial license to this repository.
+
+**Git is slow in China.**
+
+`python scripts/setup_parts.py --mirror gh-proxy`. That preset was verified
+working on 2026-10-25; mirror sites do not live long, and when it dies you can
+pass a full URL prefix instead of a preset name.
+
+**A part is behaving wrongly. Where do I fix it?**
+
+Not in `parts/` — that directory is a fetched snapshot, and editing it produces a
+copy nobody will ever merge. File it against the part's own repository, then bump
+the pin and re-verify. `docs/UPSTREAM.md` has the procedure.
+
+---
+
+## Roadmap
+
+This repository is feature-complete for what it sets out to do. The list below is
+what is honestly known to be missing, not a wish list.
+
+- **`setup_engines.py --check` should name the missing keys, not just count
+  them.** Today it reports "3 variable(s)" and leaves you to work out that
+  `MINERU_API_TOKEN` is the one the document line needs. The template and both
+  READMEs already say so; the check itself does not yet.
+- **A part's spec change should be loud.** If `md-rewrite-engine` changes its
+  note style spec in a way this repository cannot read, the pipeline reports
+  `SpecUnavailable` and stops — correct, but the message could name which file
+  and which expectation failed.
+- **No first-run smoke test for the cloud path.** The document line is only
+  verified end to end against the real MinerU API by a human today. A
+  `--selftest` that posts a two-page PDF and checks the shape of the result would
+  catch an upstream API change before a user does.
+
+Not on the roadmap, on purpose: automating the note-writing step. That is the
+project's premise, not a gap.
 
 ---
 

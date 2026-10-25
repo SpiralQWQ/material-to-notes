@@ -169,7 +169,6 @@ def _pyproject():
         import tomllib
     except ImportError:  # pragma: no cover - Python < 3.11
         pytest.skip("tomllib needs Python 3.11+")
-    import pathlib
     return tomllib.loads((REPO / "pyproject.toml").read_text(encoding="utf-8"))
 
 

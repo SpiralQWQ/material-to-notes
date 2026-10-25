@@ -11,9 +11,7 @@ from _mocks import DOC_SPEC, FETCH_DOC_SPEC, FETCH_MEDIA_SPEC, MEDIA_SPEC
 from _mocks import executors as _executors
 from material_to_notes.contract import workdir as W
 from material_to_notes.orchestrate import pipeline as PL
-from material_to_notes.orchestrate import runner as OR
 from material_to_notes.report import logs as _logs
-
 
 # --- T21 video line --------------------------------------------------------
 

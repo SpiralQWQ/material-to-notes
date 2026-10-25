@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """Scan the repo for absolute paths / internal names / key patterns.
 
 Run from anywhere. Prints nothing when clean, exits 1 when it is not.
@@ -24,6 +23,7 @@ and evidence sheets that legitimately quote the source repo's path, and
 ``parts/`` is reported separately as upstream. Scanning those three would bury
 the signal rather than raise it.
 """
+import contextlib
 import os
 import pathlib
 import re
@@ -169,10 +169,9 @@ def _utf8_stdout() -> None:
     a reason that had nothing to do with privacy. ``errors="replace"`` keeps a
     stray undecodable byte from killing the run either.
     """
-    try:
+    # redirected, already detached, or a Python without reconfigure
+    with contextlib.suppress(AttributeError, ValueError):
         sys.stdout.reconfigure(encoding="utf-8", errors="replace")
-    except (AttributeError, ValueError):
-        pass  # redirected, already detached, or a Python without reconfigure
 
 
 def _scan(rel_paths):

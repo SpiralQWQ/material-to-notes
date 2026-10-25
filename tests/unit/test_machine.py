@@ -33,7 +33,7 @@ def test_fails_on_undecodable_text(tmp_path):
 def test_bom_is_accepted(tmp_path):
     base = tmp_path / "04_笔记"
     base.mkdir(parents=True, exist_ok=True)
-    (base / "note.md").write_bytes("﻿hello".encode("utf-8"))
+    (base / "note.md").write_bytes("﻿hello".encode())
     assert M.check("note", tmp_path).passed
 
 

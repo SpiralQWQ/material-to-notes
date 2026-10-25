@@ -6,6 +6,7 @@ run never leaves a half-written state behind.
 
 from __future__ import annotations
 
+import contextlib
 import json
 import os
 import tempfile
@@ -29,10 +30,11 @@ def _write_atomic(path: Path, data: dict) -> None:
             json.dump(data, fh, ensure_ascii=False, indent=2)
         os.replace(tmp, path)
     except BaseException:
-        try:
+        # The temp file may already be gone; that is not worth masking the
+        # original failure for, so the cleanup failure is suppressed and the
+        # real exception still propagates.
+        with contextlib.suppress(OSError):
             os.unlink(tmp)
-        except OSError:
-            pass
         raise
 
 

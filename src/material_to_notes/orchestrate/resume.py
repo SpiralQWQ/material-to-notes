@@ -17,7 +17,7 @@ def fingerprint(path) -> str:
     except OSError:
         return ""
     digest = hashlib.sha1()
-    digest.update(f"{st.st_size}:{st.st_mtime_ns}".encode("utf-8"))
+    digest.update(f"{st.st_size}:{st.st_mtime_ns}".encode())
     return digest.hexdigest()[:16]
 
 

@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """The note brief is *read out of the part*, not transcribed from it.
 
 Why this module exists (2026-10-15, ``docs/补丁重构计划报告.md`` §四):
@@ -320,7 +319,7 @@ def shape_lines(env=None) -> tuple:
         "（`toc` 那一栏由脚本自动生成，你可留空；完整原文按规范外置，正文不放。）",
         f"  ③ **每个知识点写成** `{_KP_TEMPLATE}`（编号形如 `2.1`，标题前用 `·` 分隔），"
         f"节内六件套各写成一行粗体标签：" + " ".join(f"`- **{text}** …`" for text in labels) + "；"
-        f"门禁按 " + " / ".join(f"`{label}`" for label in six) + " 找它们，**别换同义词**。",
+        "门禁按 " + " / ".join(f"`{label}`" for label in six) + " 找它们，**别换同义词**。",
         f"  ④ **费曼示范写在知识点内部**，作为第七项：`{_DEMO_TEMPLATE}` 后接 "
         f"**{feynman_range(spec)} 个角度**，用圈数字 ① ② ③ ④ ⑤ 标号（门禁按这些标号计数），"
         "角度从「复述 / 类比 / 应用 / 挑错」里选、**必须真的不同**。"
