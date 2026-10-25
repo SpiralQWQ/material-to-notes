@@ -1,0 +1,82 @@
+name: CI
+
+on:
+  push:
+    branches: [master, main]
+  pull_request:
+
+jobs:
+  test:
+    name: test (${{ matrix.os }}, py${{ matrix.python-version }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+        python-version: ["3.10", "3.11", "3.12"]
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache: pip
+
+      # Only these two. The suite reads the parts' files, it does not import
+      # them, so none of the engines (torch, funasr, opencv, crawl4ai, spacy)
+      # are needed here — verified by running the full suite in a venv holding
+      # nothing but pytest and pyyaml. Keeping CI off the engines is what keeps
+      # it at roughly a minute instead of twenty minutes.
+      - name: Install test dependencies
+        run: python -m pip install -q --upgrade pip pytest pyyaml
+
+      # Required before the tests, not after: the suite reads
+      # parts/md-rewrite-engine/configs/note_style_spec.yaml and its gate
+      # labels, and without the parts it fails with FileNotFoundError instead
+      # of a readable reason. tests/conftest.py turns that into a skip locally,
+      # but CI fetches them so CI never skips — a green CI that skipped
+      # everything would be worse than no CI.
+      - name: Fetch the five parts
+        run: python scripts/setup_parts.py
+
+      - name: Verify the pins landed
+        run: |
+          python scripts/setup_parts.py --check
+          python scripts/setup_engines.py --check
+
+      - name: Run the test suite
+        run: python -m pytest -q
+
+      # Exits non-zero on a machine-specific path, a username, the internal
+      # codename, or a key. parts/ is scanned separately and reported as
+      # upstream, so a part's own absolute path does not fail this job.
+      - name: Privacy scan
+        run: python scripts/privacy_check.py
+
+  # The two setup scripts are the first thing a new user touches. If they
+  # cannot even report status, nothing else matters.
+  setup-scripts:
+    name: setup scripts answer --help and --check
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: setup_parts.py --help
+        run: python scripts/setup_parts.py --help
+      - name: setup_engines.py --help
+        run: python scripts/setup_engines.py --help
+      - name: setup_engines.py --check on an empty checkout
+        # Expect exit 1: nothing is installed yet. Exit 2 would mean the script
+        # itself is broken, which is what this job is guarding against.
+        run: |
+          python scripts/setup_engines.py --check || code=$?
+          if [ "$code" != "0" ] && [ "$code" != "1" ]; then
+            echo "unexpected exit code: $code"; exit 1
+          fi
+        shell: bash
