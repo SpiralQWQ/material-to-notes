@@ -22,7 +22,14 @@ First public release, dual-licensed under AGPL-3.0 plus a commercial license.
   `--line fetch` ~0.7 GB, `--line clean` ~1.4 GB, `--line media` ~3.7 GB,
   `--all` ~7 GB. Local MinerU is opt-in and marked not recommended; ffmpeg is
   detected but never downloaded, because fetching an executable from the internet
-  inside a setup script is a supply-chain risk.
+  inside a setup script is a supply-chain risk. The pipeline's own environment is
+  the one exception to the venv-per-engine rule: the adapters launch every part
+  under `sys.executable`, so its dependencies are installed into that interpreter
+  rather than into a venv nothing would read.
+- **`pyproject.toml` declares the pipeline's real dependencies.** They used to be
+  an empty list, which left `pip install -e .` unable to `import yaml`. A test
+  now asserts that this list and `setup_engines.py`'s pipeline package list stay
+  the same fact, so the two cannot drift apart again.
 - **`scripts/privacy_check.py`** — scans for absolute paths, usernames, the
   internal codename, and keys. Wired into CI. It reads both git and a bounded
   disk walk, so a file nobody has added yet is still scanned, and it works on a
@@ -34,7 +41,11 @@ First public release, dual-licensed under AGPL-3.0 plus a commercial license.
   AGPL-or-Artifex-commercial, and torch carries BSL-1.0 among its licenses.
 - **Community files** — `CONTRIBUTING.md`, `CODE_OF_CONDUCT.md`, `SECURITY.md`,
   issue and pull-request templates, and CI.
-- **524 tests** (unit + e2e + exhaustive). They need only `pytest` and `pyyaml`:
+- **`.env.example` names every key the pipeline reads**, `MINERU_API_TOKEN`
+  included. It used to omit the one token the default document line cannot run
+  without, so a user following the README hit "MINERU_API_TOKEN is not set" with
+  nothing in the template to copy.
+- **526 tests** (unit + e2e + exhaustive). They need only `pytest` and `pyyaml`:
   the suite reads the parts' files, it does not import them, so no engine has to
   be installed to run it.
 
@@ -53,6 +64,15 @@ First public release, dual-licensed under AGPL-3.0 plus a commercial license.
 - **This changelog covers this repository only.** Changes to the five parts
   belong to their own changelogs; this repository consumes them through pinned
   commits. The internal development log is not published here.
+- **A fresh clone was verified end to end** before this release: clone,
+  `setup_parts.py`, `pytest -q` → 526 passed, exit 0. Four things that made the
+  README's three steps fail on a clean machine were found and fixed that way, not
+  by reading the code: the pipeline environment installing into a venv nothing
+  reads, the empty dependency list above, the missing `.env` key, and a CI step
+  whose exit-code guard went red precisely when everything was fine.
+- **The suite never reports green without looking.** With `parts/` absent it
+  skips everything, prints the command that fixes it, and exits 1 — a run that
+  verified nothing must not read as success to anything watching the exit code.
 - The document line runs against the MinerU **cloud API** by default. The local
   engine is available (`--mode local`) and deliberately not recommended.
 - **The note-writing step is intentionally not automated.** See the README
