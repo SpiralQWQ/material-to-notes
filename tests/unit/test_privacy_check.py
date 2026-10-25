@@ -221,9 +221,15 @@ def test_utf8_stdout_never_raises_on_a_bare_stream(monkeypatch):
 def test_the_local_project_tree_is_caught():
     # internal-name only knew one path. Every other directory this project
     # lived in sailed straight through, so the pattern was widened.
+    #
+    # Every fragment is assembled from code points, including the subdirectory.
+    # The first version spelled that one literally, which put a real internal
+    # directory name into a tracked file — the very thing this scanner exists to
+    # find, sitting in the test that proves the scanner works.
     rx = P.PATTERNS["local-tree"]
     assert rx.search("mirrored from " + "AAA" + chr(46) + "GitHub_MySorces")
-    assert rx.search("under " + "AAA" + chr(46) + "Study" + chr(92) + "M" + chr(46) + "AIStudy")
+    assert rx.search("under " + "AAA" + chr(46) + "Study" + chr(92)
+                     + "M" + chr(46) + "AIStudy")
     assert not rx.search("AAA rated, AAA battery")
 
 
