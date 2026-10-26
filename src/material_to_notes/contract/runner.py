@@ -81,8 +81,22 @@ def part_tool(env_key: str, part: str, env=None) -> str:
 
 
 def child_env(overrides=None, base=None) -> dict:
-    """Environment for a child process: the current env plus overrides."""
-    env = dict(os.environ if base is None else base)
+    """Environment for a child process: the current env plus overrides.
+
+    ``base`` is *added to* the current environment, never a replacement for it.
+    It used to replace it, and on Windows that stripped ``SYSTEMROOT`` — which
+    CPython needs before it can run a single line, so the child died with
+    ``Fatal Python error: _Py_HashRandomization_Init: failed to get random
+    numbers`` and ``Python runtime state: preinitialized``. Python 3.11 and
+    newer survive that; 3.10 does not, which is why it surfaced as exactly one
+    red job out of nine and never locally.
+
+    A caller that genuinely wants a clean environment can build one and pass it
+    as ``overrides``; no call site here does.
+    """
+    env = dict(os.environ)
+    if base:
+        env.update({k: str(v) for k, v in base.items()})
     if overrides:
         env.update({k: str(v) for k, v in overrides.items()})
     return env

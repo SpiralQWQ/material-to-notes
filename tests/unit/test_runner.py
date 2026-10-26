@@ -1,7 +1,11 @@
 """Tests for contract.runner — running a tool and reporting the outcome."""
 
+import os
 import subprocess
+import sys
 from types import SimpleNamespace
+
+import pytest
 
 from material_to_notes.contract import runner as R
 from material_to_notes.contract import steps as S
@@ -72,9 +76,47 @@ def test_tool_env_keeps_existing_pythonpath_and_is_never_partial():
     assert env["PYTHONPATH"].endswith("keep")
 
 
-def test_tool_env_without_tool_path_returns_full_env(tmp_path):
-    env = R.tool_env("", base={"PATH": "x"})
-    assert env["PATH"] == "x"
+def test_tool_env_without_tool_path_returns_full_env():
+    # The name promised this for a long time without asserting it. `base` used
+    # to *replace* the environment rather than add to it, so a caller passing
+    # {"MRE_DIR": ...} handed the child nothing else at all -- and on Windows
+    # the child lost SYSTEMROOT and died at startup. Assert the promise, not a
+    # single key that passes under both readings.
+    sentinel = "MTN_CHILD_ENV_SENTINEL"
+    os.environ[sentinel] = "keep-me"
+    try:
+        env = R.tool_env("", base={"PATH": "x"})
+        assert env["PATH"] == "x"
+        assert env[sentinel] == "keep-me", (
+            "tool_env must add to the ambient environment, not replace it"
+        )
+    finally:
+        os.environ.pop(sentinel, None)
+
+
+@pytest.mark.skipif(os.name != "nt", reason="the failure mode is Windows-only")
+def test_tool_env_keeps_systemroot_on_windows():
+    # Without SYSTEMROOT CPython cannot finish initialising: it dies with
+    # "Fatal Python error: _Py_HashRandomization_Init" and "Python runtime
+    # state: preinitialized" before running a line of the tool. 3.11 and newer
+    # tolerate its absence, 3.10 does not -- which is why this only ever showed
+    # up as one red job out of nine, and never on a developer machine.
+    assert os.environ.get("SYSTEMROOT"), "this runner should have SYSTEMROOT"
+    env = R.tool_env("", base={})
+    assert env.get("SYSTEMROOT") == os.environ["SYSTEMROOT"]
+
+
+def test_a_child_spawned_through_tool_env_actually_starts(tmp_path):
+    # The end-to-end guard for the same bug. Every earlier version of these
+    # assertions passed while the child could not start, because they only
+    # looked at the dict. This one runs a real interpreter with the env
+    # tool_env produced and requires it to reach the last line.
+    script = tmp_path / "speak.py"
+    script.write_text("print('child-ran-ok')" + chr(10), encoding="utf-8")
+    result = R.run_command([sys.executable, str(script)],
+                           env=R.tool_env("", base={"MRE_DIR": str(tmp_path)}))
+    assert result.ok, f"the child died at startup: {result.error}"
+    assert "child-ran-ok" in result.stdout
 
 
 def test_execute_reports_exit_code(tmp_path):
