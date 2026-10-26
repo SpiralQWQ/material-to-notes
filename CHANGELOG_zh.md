@@ -74,11 +74,13 @@
 - **写笔记这一步故意不做成自动。** 见 README 的「它是半自动的，不是全自动」一节
   与 [`docs/SOP.md`](docs/SOP.md)。
 
-## [0.1.0] - 2026-10-07
+## 0.1.0 - 2026-10-07
 
 内部首个版本，从未对外发布：契约层、适配层、编排层、门禁层、记录层，加 188 个测试。
 留在这里只为交代来历；要知道这个项目现在是什么，看上面的 1.0.0。
 
+**刻意不做成链接。** 0.1.0 从未对外发布，没有 release 页面可指；
+放一个链接定义等于承诺一个一上 GitHub 就 404 的地址。
+
 [未发布]: https://github.com/SpiralQWQ/material-to-notes/compare/v1.0.0...HEAD
 [1.0.0]: https://github.com/SpiralQWQ/material-to-notes/releases/tag/v1.0.0
-[0.1.0]: https://github.com/SpiralQWQ/material-to-notes/releases/tag/v0.1.0

@@ -94,13 +94,16 @@ First public release, dual-licensed under AGPL-3.0 plus a commercial license.
 - **The note-writing step is intentionally not automated.** See the README
   section "It is semi-automatic, not automatic" and [`docs/SOP.md`](docs/SOP.md).
 
-## [0.1.0] - 2026-10-07
+## 0.1.0 - 2026-10-07
 
 Internal first version, never released publicly: the contract, adapter,
 orchestration, gate, and reporting layers, plus 188 tests. Kept here for
 provenance; the useful description of what this project is now is the 1.0.0
 entry above.
 
+Deliberately not a link. 0.1.0 was never published, so there is no release page
+for it to point at, and a link definition that promises one 404s the moment
+this file is on GitHub.
+
 [Unreleased]: https://github.com/SpiralQWQ/material-to-notes/compare/v1.0.0...HEAD
 [1.0.0]: https://github.com/SpiralQWQ/material-to-notes/releases/tag/v1.0.0
-[0.1.0]: https://github.com/SpiralQWQ/material-to-notes/releases/tag/v0.1.0
