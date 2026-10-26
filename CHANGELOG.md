@@ -55,13 +55,14 @@ First public release, dual-licensed under AGPL-3.0 plus a commercial license.
 - **A lint job in CI** (ruff). The rule set is pinned in `pyproject.toml` rather
   than taken from ruff's defaults, which moved between versions and would turn
   CI red on upgrade for reasons unrelated to any commit.
-- **`tests/unit/test_open_source_gate.py`** — 45 tests that assert the gate
-  itself: both READMEs carry every required section, the table of contents
+- **`tests/unit/test_open_source_gate.py`** — 45 assertions that turn the
+  open-source gate itself into executable checks: both READMEs carry every
+  required section, the table of contents
   matches the headings, the changelog has an Unreleased slot, the license carries
   the standard AGPL markers, CI runs pytest *and* a linter, and no script is
-  stranded in the repository root. Every one of those was true on the day it was
-  written and is lost to a later edit otherwise.
-- **575 tests** (unit + e2e + exhaustive). They need only `pytest` and `pyyaml`:
+  stranded in the repository root. Every one of those held on the day it was
+  written, and each is easy to lose to a later edit.
+- **578 tests** (unit + e2e + exhaustive). They need only `pytest` and `pyyaml`:
   the suite reads the parts' files, it does not import them, so no engine has to
   be installed to run it.
 
@@ -69,7 +70,7 @@ First public release, dual-licensed under AGPL-3.0 plus a commercial license.
 
 - **The five parts are fetched, not vendored.** Copying them into this repository
   created two authoritative copies that drift apart silently, and made the
-  repository read as an aggregation rather than a project. A lock table plus
+  repository read as five repos stacked together rather than one project. A lock table plus
   `docs/UPSTREAM.md` replace the copies.
 - **The command is `material-to-notes`** — repository name, distribution name,
   CLI command, and import name are one name, matching the other repositories in
@@ -79,9 +80,9 @@ First public release, dual-licensed under AGPL-3.0 plus a commercial license.
 
 - **This changelog covers this repository only.** Changes to the five parts
   belong to their own changelogs; this repository consumes them through pinned
-  commits. The internal development log is not published here.
+  commits. The internal development process log is not published here.
 - **A fresh clone was verified end to end** before this release: clone,
-  `setup_parts.py`, `pytest -q` → 575 passed, exit 0, and `ruff check` clean. Four things that made the
+  `setup_parts.py`, `pytest -q` → 578 passed, exit 0, and `ruff check` clean. Four things that made the
   README's three steps fail on a clean machine were found and fixed that way, not
   by reading the code: the pipeline environment installing into a venv nothing
   reads, the empty dependency list above, the missing `.env` key, and a CI step

@@ -108,17 +108,17 @@ check format / structure / word count        review quality
 **Writing the note is deliberately not automated.** Format can be checked, word
 count can be checked, structure can be checked — but whether it explains the
 material is a judgement only a mind can make. So the code stops at that step and
-prints a line saying the `note` step goes to a sub-agent and where the task sheet
-is, and then the main conversation takes over: read the sheet, dispatch an agent,
-collect the work, review.
+prints a task sheet — what to write, which spec to follow, where it goes — and
+hands it to you, or to an AI assistant you drive.
 
-The working agreement lives in [`docs/SOP.md`](docs/SOP.md) (in Chinese): the
-main conversation only dispatches, hands off between steps, watches for errors,
-and decides retry-or-stop; each step gets one executing sub-agent and one
-**independent** reviewing sub-agent that does not share the context of the
-executor; every task goes through 4 rounds of review plus a four-part evidence
-sheet; three failures and it stops and hands back to a human — the code never
-routes around its own failure.
+After that, machine gates take over: format, structure, word count, and whether
+every informative number in the note traces back to the source. Passing the gates
+is what "done" means.
+
+The full working agreement is in [`docs/SOP.md`](docs/SOP.md) (Chinese only): who
+dispatches, how work is handed off, what happens when something fails, and why the
+reviewer must be someone who **did not write the note** — reviewing your own work
+finds typos, not the places where you failed to explain anything.
 
 ---
 
@@ -187,7 +187,7 @@ these mirrors do not last, so pass a full URL prefix once that one has gone).
 ### Step 3: verify
 
 ```bash
-python -m pytest -q        # 524 passed
+python -m pytest -q        # 578 passed
 ```text
 ---
 
@@ -206,13 +206,13 @@ Eleven subcommands:
 |---|---|
 | `init` | initialise a work directory |
 | `route` | see which line an input takes |
-| `run` | run one line end to end (the `note` step goes to a sub-agent) |
-| `step` | run a single step (for the main conversation to dispatch) |
-| `intake` | read/write the intake sheet |
-| `deliver` | copy notes to the delivery directory named in the intake sheet |
-| `assign` | print the task sheet for a step (dispatches; snapshots the previous output first) |
-| `snapshots` | list the versions a step has snapshotted |
-| `gate` | run the machine gates for a step |
+| `run` | run one line end to end (the note-writing step is handed to you) |
+| `step` | run a single step (so one step can be handed to an AI assistant) |
+| `intake` | read/write the work sheet (what to process, where it goes) |
+| `deliver` | copy notes to the delivery directory named in the work sheet |
+| `assign` | print the task sheet for a step (backs up the previous output first) |
+| `snapshots` | list the versions a step has backed up |
+| `gate` | run a step's machine checks (format / structure / word count / number tracing) |
 | `toc` | add/refresh the in-document table of contents of a note |
 | `checklist` | print the review checklist for a step |
 
