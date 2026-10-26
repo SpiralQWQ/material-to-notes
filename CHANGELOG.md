@@ -55,7 +55,7 @@ First public release, dual-licensed under AGPL-3.0 plus a commercial license.
 - **A lint job in CI** (ruff). The rule set is pinned in `pyproject.toml` rather
   than taken from ruff's defaults, which moved between versions and would turn
   CI red on upgrade for reasons unrelated to any commit.
-- **`tests/unit/test_open_source_gate.py`** — 45 assertions that turn the
+- **`tests/unit/test_open_source_gate.py`** — 46 assertions that turn the
   open-source gate itself into executable checks: both READMEs carry every
   required section, the table of contents
   matches the headings, the changelog has an Unreleased slot, the license carries

@@ -45,7 +45,7 @@
   不知道这点的读者第一反应会是「这东西坏了」。
 - **CI 加 lint**（ruff）。规则集在 pyproject 里**显式钉死**，不吃 ruff 的默认值——
   默认规则集在版本间动过，吃默认值会让 CI 因为一次 ruff 升级而变红，与提交本身无关。
-- **`tests/unit/test_open_source_gate.py`** —— 45 条断言，把开源规范本身变成可执行的检查：
+- **`tests/unit/test_open_source_gate.py`** —— 46 条断言，把开源规范本身变成可执行的检查：
   两份 README 必备章节齐全、目录锚点对得上标题、CHANGELOG 有未发布槽、
   LICENSE 含 AGPL 标准标记、CI 既跑 pytest 也跑 linter、根目录没有散落脚本。
   这些条件在写下的那天全部成立，而它们很容易被一次后续编辑悄悄抹掉。
